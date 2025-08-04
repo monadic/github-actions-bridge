@@ -1,0 +1,104 @@
+# GitHub Actions Bridge Configuration
+# This file is used when running the bridge in Docker
+
+worker:
+  # These will be replaced by environment variables
+  id: ${CONFIGHUB_WORKER_ID}
+  secret: ${CONFIGHUB_WORKER_SECRET}
+  url: ${CONFIGHUB_URL:-https://api.confighub.com}
+
+bridge:
+  # Base directory for workspaces
+  baseDir: ${ACTIONS_BRIDGE_BASE_DIR:-/var/lib/actions-bridge}
+  
+  # Maximum concurrent workflow executions
+  maxConcurrent: ${MAX_CONCURRENT_WORKFLOWS:-5}
+  
+  # Workspace timeout before auto-cleanup
+  workspaceTimeout: 1h
+  
+  # Cleanup settings
+  cleanup:
+    enabled: true
+    interval: 30m
+    maxAge: 2h
+
+act:
+  # Default Docker image for runners
+  defaultImage: ${ACT_DEFAULT_IMAGE:-catthehacker/ubuntu:act-latest}
+  
+  # Platform mappings
+  platforms:
+    ubuntu-latest: catthehacker/ubuntu:act-latest
+    ubuntu-22.04: catthehacker/ubuntu:act-22.04
+    ubuntu-20.04: catthehacker/ubuntu:act-20.04
+    ubuntu-18.04: catthehacker/ubuntu:act-18.04
+  
+  # Cache directory
+  cacheDir: /tmp/act-cache
+  
+  # Container options
+  container:
+    workdirParent: /workspace
+    resourceLimits:
+      cpu: "2"
+      memory: "4g"
+  
+  # Execution options
+  execution:
+    noOutput: false
+    verbose: ${DEBUG:-false}
+    jsonLogger: true
+    useNewActionCache: true
+    
+security:
+  # Use file-based secrets (never environment variables)
+  secretsAsFiles: true
+  
+  # Enable leak detection
+  leakDetection:
+    enabled: true
+    patterns:
+      - password
+      - token
+      - key
+      - secret
+      - credential
+  
+  # Secure workspace cleanup
+  secureCleanup:
+    enabled: true
+    overwritePasses: 3
+
+monitoring:
+  # Health check settings
+  health:
+    enabled: true
+    port: 8080
+    path: /health
+  
+  # Metrics settings
+  metrics:
+    enabled: true
+    port: 8080
+    path: /metrics
+  
+  # Logging
+  logging:
+    level: ${LOG_LEVEL:-info}
+    format: json
+    output: stdout
+
+compatibility:
+  # Compatibility warnings
+  warnings:
+    enabled: true
+    failOnError: false
+  
+  # Known limitations handling
+  limitations:
+    cacheActions: warn
+    artifactActions: warn
+    selfHostedRunners: error
+    githubEnvironments: warn
+    githubPackages: warn

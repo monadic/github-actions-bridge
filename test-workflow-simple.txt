@@ -1,0 +1,47 @@
+name: Simple Test Workflow
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Message to display'
+        required: false
+        default: 'Hello from ConfigHub!'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Display message
+        run: |
+          echo "Starting simple workflow test"
+          echo "Message: ${{ github.event.inputs.message || 'No message provided' }}"
+      
+      - name: Check ConfigHub context
+        run: |
+          echo "ConfigHub Space: ${{ env.CONFIGHUB_SPACE }}"
+          echo "ConfigHub Unit: ${{ env.CONFIGHUB_UNIT }}"
+          echo "ConfigHub Revision: ${{ env.CONFIGHUB_REVISION }}"
+      
+      - name: Use configuration
+        env:
+          APP_NAME: ${{ env.CONFIG_APP_NAME || 'default-app' }}
+          REPLICAS: ${{ env.CONFIG_REPLICAS || '1' }}
+        run: |
+          echo "Application: $APP_NAME"
+          echo "Replicas: $REPLICAS"
+      
+      - name: Create output
+        run: |
+          mkdir -p output
+          cat > output/result.json << EOF
+          {
+            "status": "success",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "app": "${{ env.CONFIG_APP_NAME || 'default-app' }}",
+            "space": "${{ env.CONFIGHUB_SPACE }}",
+            "unit": "${{ env.CONFIGHUB_UNIT }}"
+          }
+          EOF
+          echo "Output saved to output/result.json"
