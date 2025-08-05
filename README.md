@@ -16,6 +16,56 @@ The GitHub Actions Bridge simplifies this by unifying GitHub Actions workflows w
 ✅ **Time Travel Testing** - Test workflows with past or future configurations  
 ✅ **Configuration as Code** - Treat workflows as configuration that evolves with your app
 
+### Setting Up ConfigHub Worker
+
+To run the GitHub Actions Bridge as a ConfigHub worker:
+
+1. **Login to ConfigHub**
+   ```bash
+   cub auth login
+   ```
+
+2. **Set your working context**
+   ```bash
+   # Check current context
+   cub context get
+   
+   # Set the space you want to work with
+   cub context set --space <your-space-name>
+   ```
+
+3. **Create a worker for the bridge**
+   ```bash
+   # Create a new worker instance
+   cub worker create actions-bridge-1
+   ```
+
+4. **Get worker credentials**
+   ```bash
+   # Display environment variables for the worker
+   cub worker get-envs actions-bridge-1
+   
+   # Set them in your shell
+   eval "$(cub worker get-envs actions-bridge-1)"
+
+   export CONFIGHUB_URL=https://hub.confighub.com
+   ```
+
+5. **Start the bridge worker**
+   ```bash   
+   # With environment variables set from step 4
+   ./bin/actions-bridge   
+   ```
+
+6. **Create a Hello World GitHub Actions as a Config Unit**
+   ```bash
+   cub unit create hello-world examples/hello-world.yml
+   ```
+
+Now you can go to https://hub.confighub.com. Then find a Worker named `actions-bridge-1` and set its Target to `docker-desktop`.  Next find a Config Unit named `hello-world` in your space, then you can review the config and click [Apply] to apply the GitHub Actions.
+
+The bridge will now connect to ConfigHub and execute GitHub Actions workflows based on your configurations.
+
 ## Quick Example
 
 ```bash
