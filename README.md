@@ -1,32 +1,32 @@
 # GitHub Actions Bridge
 
-**Test GitHub Actions workflows locally with production configurations before pushing to GitHub.**
+**Combine configuration management with GitHub Actions using act and ConfigHub.**
 
 ## Why This Matters
 
-Ever pushed a workflow change only to watch it fail in CI? Spent hours debugging workflows through commit-push-wait cycles? Wished you could test with real secrets and configurations locally?
+Managing configurations and workflows separately leads to complexity and drift. You have workflows in GitHub, configurations in various places, secrets scattered across systems, and no unified way to manage them.
 
-The GitHub Actions Bridge solves these problems by bringing GitHub Actions to your local machine, integrated with ConfigHub for secure configuration management.
+The GitHub Actions Bridge simplifies this by unifying GitHub Actions workflows with ConfigHub's configuration management, creating a single source of truth for both your workflows and configurations.
 
 ## Key Benefits
 
-✅ **Test Locally First** - Run workflows on your machine before committing  
-✅ **Real Configurations** - Use actual configs from ConfigHub, not mock data  
-✅ **Secure Secrets** - Access secrets without exposing them in code  
+✅ **Unified Configuration** - Manage workflows and configs in one place  
+✅ **Local Execution** - Run GitHub Actions anywhere using act  
+✅ **Secure Secrets** - ConfigHub handles all secret management  
 ✅ **Time Travel Testing** - Test workflows with past or future configurations  
-✅ **No More "Works on My Machine"** - Test with production-identical settings
+✅ **Configuration as Code** - Treat workflows as configuration that evolves with your app
 
 ## Quick Example
 
 ```bash
-# Test your deployment workflow locally with production configs
-cub-actions run .github/workflows/deploy.yml --space production --dry-run
+# Run workflows with configurations from ConfigHub
+cub-actions run .github/workflows/deploy.yml --space production
 
-# See what would have happened if you ran this last week
-cub-actions run deploy.yml --as-of "2024-01-01" --space staging
+# Use different configurations for different environments
+cub-actions run deploy.yml --space staging --unit webapp
 
-# Compare workflow changes before pushing
-cub-actions diff deploy.yml deploy-v2.yml --space production
+# Test with historical configurations
+cub-actions run deploy.yml --as-of "2024-01-01" --space production
 ```
 
 ## Documentation
@@ -108,18 +108,19 @@ cub-actions validate workflow.yml
 ## How It Works
 
 ```
-Your Workflow → GitHub Actions Bridge → ConfigHub → Local Execution
-                        ↓
-                 Workspace Isolation
-                 Secret Management  
-                 Compatibility Checks
+ConfigHub Configurations + GitHub Actions Workflows
+                    ↓
+            GitHub Actions Bridge
+                    ↓
+    Local Execution via act (nektos/act)
 ```
 
-The bridge uses [nektos/act](https://github.com/nektos/act) under the hood to execute GitHub Actions locally, adding:
-- ConfigHub integration for configurations and secrets
-- Workspace isolation for security
-- Compatibility checking and warnings
-- Advanced features like time-travel testing
+The bridge connects three powerful tools:
+- **ConfigHub**: Manages all your configurations and secrets
+- **GitHub Actions**: Defines your workflows and automation
+- **act**: Executes GitHub Actions locally in Docker containers
+
+This combination enables configuration-driven workflows where your CI/CD pipelines adapt based on ConfigHub configurations.
 
 ## Installation Options
 

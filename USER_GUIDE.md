@@ -19,17 +19,18 @@ Welcome! This guide will walk you through using the GitHub Actions Bridge step b
 
 ## Understanding the Problem
 
-If you've used GitHub Actions, you've probably experienced:
-- ❌ Pushing code just to test if your workflow works
-- ❌ Waiting 5-10 minutes to see if your change broke CI
-- ❌ Debugging through dozens of commit messages like "fix CI attempt #23"
-- ❌ Being unable to test workflows that need production secrets
+Managing modern applications involves juggling multiple systems:
+- ❌ Workflows in GitHub Actions
+- ❌ Configurations in various config files
+- ❌ Secrets in different secret managers
+- ❌ No unified way to manage them together
+- ❌ Configuration changes don't automatically update workflows
 
-The GitHub Actions Bridge solves these problems by letting you:
-- ✅ Test workflows locally before pushing
-- ✅ Use real configurations from ConfigHub
-- ✅ Debug with instant feedback
-- ✅ Test with actual secrets safely
+The GitHub Actions Bridge solves these problems by:
+- ✅ Unifying workflows and configurations through ConfigHub
+- ✅ Running GitHub Actions anywhere (not just on GitHub)
+- ✅ Managing secrets in one secure place
+- ✅ Making workflows configuration-driven
 
 ## Prerequisites
 
