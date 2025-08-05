@@ -1,0 +1,81 @@
+name: Complex Workflow
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="1.0.0-$(date +%Y%m%d%H%M%S)"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+      
+      - name: Build application
+        run: |
+          echo "Building application..."
+          mkdir -p dist
+          echo "#!/bin/bash" > dist/app.sh
+          echo "echo 'Hello from ConfigHub Actions Bridge!'" >> dist/app.sh
+          chmod +x dist/app.sh
+          echo "✓ Build complete"
+      
+      - name: Run tests
+        run: |
+          echo "Running tests..."
+          sleep 2
+          echo "✓ All tests passed"
+      
+      - name: Create artifacts
+        run: |
+          mkdir -p artifacts
+          cp -r dist/* artifacts/
+          echo "${{ steps.version.outputs.version }}" > artifacts/version.txt
+          tar -czf artifacts/app.tar.gz dist/
+          echo "✓ Artifacts created"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    env:
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
+    steps:
+      - name: Deploy to ${{ github.event.inputs.environment }}
+        run: |
+          echo "Deploying version ${{ needs.build.outputs.version }} to $ENVIRONMENT"
+          echo "Deployment steps would go here..."
+          echo "✓ Deployment successful"
+      
+      - name: Verify deployment
+        run: |
+          echo "Verifying deployment..."
+          echo "Health check: OK"
+          echo "Version deployed: ${{ needs.build.outputs.version }}"
+
+  # This job demonstrates a limitation
+  cache-example:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cache dependencies
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      
+      - name: Note about caching
+        run: |
+          echo "NOTE: actions/cache is not supported locally"
+          echo "Dependencies will be downloaded each time"

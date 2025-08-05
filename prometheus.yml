@@ -1,0 +1,10 @@
+# Prometheus configuration for monitoring GitHub Actions Bridge
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'actions-bridge'
+    static_configs:
+      - targets: ['actions-bridge:8080']
+    metrics_path: '/metrics'

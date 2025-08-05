@@ -1,0 +1,31 @@
+name: Simple Test Workflow
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      message:
+        description: 'Test message'
+        required: false
+        default: 'Hello from ConfigHub!'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo message
+        run: |
+          echo "Message: ${{ github.event.inputs.message || 'No message provided' }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Workspace: ${{ github.workspace }}"
+      
+      - name: Create artifact
+        run: |
+          mkdir -p artifacts
+          echo "Test artifact content" > artifacts/test.txt
+          echo "Created at $(date)" >> artifacts/test.txt
+      
+      - name: Show environment
+        run: |
+          echo "=== ConfigHub Environment ==="
+          env | grep -E '^CONFIG_|^CONFIGHUB_' || true
