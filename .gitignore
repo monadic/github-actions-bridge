@@ -60,3 +60,8 @@ workspaces/
 .act/
 artifacts/
 actions-bridge-workspace/
+
+# Test files
+examples/secrets.env
+examples/test.env
+examples/*.env
