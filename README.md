@@ -16,6 +16,8 @@ The GitHub Actions Bridge simplifies this by unifying GitHub Actions workflows w
 ✅ **Time Travel Testing** - Test workflows with past or future configurations  
 ✅ **Configuration as Code** - Treat workflows as configuration that evolves with your app
 
+## Getting Started Guide
+
 ### Setting Up ConfigHub Worker
 
 To run the GitHub Actions Bridge as a ConfigHub worker:
@@ -66,6 +68,28 @@ Now you can go to https://hub.confighub.com. Then find a Worker named `actions-b
 
 The bridge will now connect to ConfigHub and execute GitHub Actions workflows based on your configurations.
 
+### Creating ConfigHub Actions Resources
+
+When creating GitHub Actions workflows for ConfigHub, you need to add a Kubernetes-style resource header. The bridge will automatically strip these lines before passing the workflow to Act.
+
+**Required Format:**
+```yaml
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: your-workflow-name
+# Your standard GitHub Actions workflow starts here
+name: Your Workflow
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello from ConfigHub!"
+```
+
+All example workflows in the `examples/` directory are require to include this header before use.
+
 ## Quick Example
 
 ```bash
@@ -111,6 +135,10 @@ cub-actions run examples/hello-world.yml
 ```bash
 # Create a test workflow
 cat > test.yml << 'EOF'
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: my-test
 name: My Test
 on: push
 jobs:
