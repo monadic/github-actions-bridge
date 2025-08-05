@@ -1,0 +1,281 @@
+name: Claude-Orchestrated Operations
+on:
+  workflow_dispatch:
+    inputs:
+      operation-request:
+        description: 'Natural language request for Claude to orchestrate'
+        required: true
+        default: 'Check system health and scale if needed'
+      claude-api-key:
+        description: 'Claude API key (or use secrets)'
+        required: false
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY || github.event.inputs.claude-api-key }}
+
+jobs:
+  analyze-request:
+    runs-on: ubuntu-latest
+    outputs:
+      operation-plan: ${{ steps.claude.outputs.plan }}
+      config-requirements: ${{ steps.claude.outputs.configs }}
+      
+    steps:
+      - name: Ask Claude to analyze the request
+        id: claude
+        run: |
+          # In a real implementation, this would call Claude's API
+          # For demo, we'll simulate Claude's analysis
+          
+          REQUEST="${{ github.event.inputs.operation-request }}"
+          echo "🤖 Claude analyzing: $REQUEST"
+          
+          # Simulate Claude's response based on the request
+          if [[ "$REQUEST" == *"scale"* ]]; then
+            cat > claude-response.json << 'EOF'
+          {
+            "analysis": "User wants to check system health and potentially scale. I'll need to check current metrics and ConfigHub state.",
+            "plan": [
+              "fetch_current_config",
+              "check_system_metrics", 
+              "analyze_scaling_need",
+              "update_config_if_needed",
+              "apply_changes"
+            ],
+            "required_configs": ["webapp/replicas", "webapp/resources", "webapp/health_thresholds"],
+            "estimated_duration": "5-10 minutes"
+          }
+          EOF
+          else
+            cat > claude-response.json << 'EOF'
+          {
+            "analysis": "General operations request. I'll perform standard checks.",
+            "plan": ["fetch_current_config", "run_diagnostics", "generate_report"],
+            "required_configs": ["webapp/health_check", "webapp/monitoring"],
+            "estimated_duration": "2-3 minutes"
+          }
+          EOF
+          fi
+          
+          # Output for next jobs
+          echo "plan=$(jq -c .plan claude-response.json)" >> $GITHUB_OUTPUT
+          echo "configs=$(jq -c .required_configs claude-response.json)" >> $GITHUB_OUTPUT
+          
+          echo "✅ Claude's analysis complete"
+          cat claude-response.json | jq .
+
+  fetch-configHub-state:
+    runs-on: ubuntu-latest
+    needs: analyze-request
+    outputs:
+      current-config: ${{ steps.fetch.outputs.config }}
+      
+    steps:
+      - name: Fetch current ConfigHub state
+        id: fetch
+        run: |
+          echo "📦 Fetching ConfigHub state for Claude's operation..."
+          
+          # Simulate ConfigHub API call
+          # In real implementation: cub-actions fetch-config --space production --unit webapp
+          
+          cat > current-config.json << 'EOF'
+          {
+            "space": "production",
+            "unit": "webapp",
+            "revision": 142,
+            "last_modified": "2024-01-15T10:30:00Z",
+            "config": {
+              "replicas": 3,
+              "resources": {
+                "cpu": "500m",
+                "memory": "1Gi"
+              },
+              "health_thresholds": {
+                "cpu_percent": 80,
+                "memory_percent": 85,
+                "response_time_ms": 500
+              }
+            },
+            "metrics": {
+              "current_cpu": 75,
+              "current_memory": 82,
+              "avg_response_time": 450
+            }
+          }
+          EOF
+          
+          echo "config=$(cat current-config.json | jq -c)" >> $GITHUB_OUTPUT
+          echo "✅ ConfigHub state retrieved"
+
+  claude-decision-making:
+    runs-on: ubuntu-latest
+    needs: [analyze-request, fetch-configHub-state]
+    outputs:
+      decision: ${{ steps.decide.outputs.decision }}
+      new-config: ${{ steps.decide.outputs.config }}
+      
+    steps:
+      - name: Claude makes operational decisions
+        id: decide
+        run: |
+          echo "🤖 Claude analyzing metrics and making decisions..."
+          
+          # Parse current state
+          CURRENT_CONFIG='${{ needs.fetch-configHub-state.outputs.current-config }}'
+          CPU=$(echo "$CURRENT_CONFIG" | jq -r .metrics.current_cpu)
+          MEMORY=$(echo "$CURRENT_CONFIG" | jq -r .metrics.current_memory)
+          REPLICAS=$(echo "$CURRENT_CONFIG" | jq -r .config.replicas)
+          
+          echo "Current state:"
+          echo "- CPU: ${CPU}%"
+          echo "- Memory: ${MEMORY}%"
+          echo "- Replicas: ${REPLICAS}"
+          
+          # Simulate Claude's decision logic
+          if [ "$MEMORY" -gt 80 ] || [ "$CPU" -gt 70 ]; then
+            NEW_REPLICAS=$((REPLICAS + 1))
+            DECISION="scale_up"
+            
+            cat > claude-decision.json << EOF
+          {
+            "reasoning": "Memory usage at ${MEMORY}% and CPU at ${CPU}% indicate high load. Recommending scale up.",
+            "decision": "scale_up",
+            "actions": [
+              "Increase replicas from ${REPLICAS} to ${NEW_REPLICAS}",
+              "Monitor for 10 minutes",
+              "Re-evaluate if needed"
+            ],
+            "new_config": {
+              "replicas": ${NEW_REPLICAS},
+              "resources": {
+                "cpu": "500m",
+                "memory": "1Gi"
+              }
+            },
+            "confidence": 0.85
+          }
+          EOF
+          else
+            DECISION="maintain"
+            cat > claude-decision.json << EOF
+          {
+            "reasoning": "System metrics are within acceptable thresholds. No action needed.",
+            "decision": "maintain",
+            "actions": ["Continue monitoring"],
+            "confidence": 0.95
+          }
+          EOF
+          fi
+          
+          echo "decision=$DECISION" >> $GITHUB_OUTPUT
+          echo "config=$(jq -c .new_config claude-decision.json 2>/dev/null || echo '{}')" >> $GITHUB_OUTPUT
+          
+          echo "✅ Claude's decision:"
+          cat claude-decision.json | jq .
+
+  update-configHub:
+    runs-on: ubuntu-latest
+    needs: claude-decision-making
+    if: needs.claude-decision-making.outputs.decision == 'scale_up'
+    
+    steps:
+      - name: Update ConfigHub with Claude's recommendation
+        run: |
+          echo "📝 Updating ConfigHub based on Claude's decision..."
+          
+          NEW_CONFIG='${{ needs.claude-decision-making.outputs.new-config }}'
+          
+          # Simulate ConfigHub update
+          # In real implementation: cub-actions update-config --space production --unit webapp --config "$NEW_CONFIG"
+          
+          echo "Updating ConfigHub:"
+          echo "$NEW_CONFIG" | jq .
+          
+          # Create audit entry
+          cat > audit-entry.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "operation": "claude_orchestrated_scaling",
+            "previous_revision": 142,
+            "new_revision": 143,
+            "changed_by": "claude-ai",
+            "reason": "Automated scaling based on high resource usage",
+            "changes": {
+              "replicas": {
+                "from": 3,
+                "to": 4
+              }
+            }
+          }
+          EOF
+          
+          echo "✅ ConfigHub updated with new configuration"
+          echo "📊 Audit trail recorded"
+
+  execute-changes:
+    runs-on: ubuntu-latest
+    needs: [claude-decision-making, update-configHub]
+    if: always()
+    
+    steps:
+      - name: Execute Claude's operational plan
+        run: |
+          DECISION="${{ needs.claude-decision-making.outputs.decision }}"
+          
+          if [ "$DECISION" = "scale_up" ]; then
+            echo "🚀 Executing scaling operation..."
+            
+            # Simulate running deployment workflow
+            # In real implementation: cub-actions run deploy.yml --space production
+            
+            echo "- Updating deployment configuration"
+            echo "- Rolling out new replicas"
+            echo "- Health checking new instances"
+            echo "✅ Scaling operation completed"
+          else
+            echo "ℹ️ No changes needed - system is healthy"
+          fi
+
+  claude-summary:
+    runs-on: ubuntu-latest
+    needs: [analyze-request, fetch-configHub-state, claude-decision-making, execute-changes]
+    if: always()
+    
+    steps:
+      - name: Claude provides operation summary
+        run: |
+          echo "========================================"
+          echo "🤖 CLAUDE'S OPERATION SUMMARY"
+          echo "========================================"
+          echo ""
+          echo "Request: ${{ github.event.inputs.operation-request }}"
+          echo ""
+          echo "What I did:"
+          echo "1. ✅ Analyzed the operational request"
+          echo "2. ✅ Retrieved current state from ConfigHub"
+          echo "3. ✅ Evaluated system metrics"
+          
+          DECISION="${{ needs.claude-decision-making.outputs.decision }}"
+          if [ "$DECISION" = "scale_up" ]; then
+            echo "4. ✅ Decided to scale up based on resource usage"
+            echo "5. ✅ Updated ConfigHub with new configuration"
+            echo "6. ✅ Executed scaling operation"
+            echo ""
+            echo "Result: Successfully scaled application to handle increased load"
+          else
+            echo "4. ✅ Determined no action needed"
+            echo ""
+            echo "Result: System is operating within normal parameters"
+          fi
+          
+          echo ""
+          echo "ConfigHub Integration:"
+          echo "- Read configuration from revision 142"
+          echo "- Tracked all changes in ConfigHub audit log"
+          echo "- Maintained full configuration history"
+          echo ""
+          echo "This demonstrates how I can orchestrate operations"
+          echo "while using ConfigHub as the source of truth for"
+          echo "all configuration state."
+          echo "========================================"

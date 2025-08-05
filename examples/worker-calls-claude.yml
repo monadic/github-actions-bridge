@@ -1,0 +1,300 @@
+name: Worker Calls Claude for Decisions
+on:
+  workflow_dispatch:
+    inputs:
+      deployment-stage:
+        description: 'Deployment stage to analyze'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+      anomaly-type:
+        description: 'Type of anomaly detected (for demo)'
+        required: false
+        type: choice
+        options:
+          - none
+          - high-error-rate
+          - slow-response
+          - memory-spike
+          - unusual-traffic
+
+env:
+  ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+jobs:
+  deployment-analysis:
+    runs-on: ubuntu-latest
+    outputs:
+      should-proceed: ${{ steps.ask-claude.outputs.proceed }}
+      claude-advice: ${{ steps.ask-claude.outputs.advice }}
+      
+    steps:
+      - name: Gather deployment context
+        id: context
+        run: |
+          echo "📊 Gathering deployment context for Claude..."
+          
+          STAGE="${{ github.event.inputs.deployment-stage }}"
+          ANOMALY="${{ github.event.inputs.anomaly-type }}"
+          
+          # Simulate gathering metrics and context
+          cat > deployment-context.json << EOF
+          {
+            "stage": "$STAGE",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "build_info": {
+              "version": "2.1.0",
+              "commit": "abc123def",
+              "changes": ["Updated API endpoints", "Fixed memory leak", "Added new feature X"]
+            },
+            "current_metrics": {
+              "error_rate": $([ "$ANOMALY" = "high-error-rate" ] && echo "5.2" || echo "0.1"),
+              "response_time_ms": $([ "$ANOMALY" = "slow-response" ] && echo "1500" || echo "200"),
+              "memory_usage_percent": $([ "$ANOMALY" = "memory-spike" ] && echo "92" || echo "65"),
+              "requests_per_second": $([ "$ANOMALY" = "unusual-traffic" ] && echo "5000" || echo "1000")
+            },
+            "thresholds": {
+              "error_rate": 1.0,
+              "response_time_ms": 500,
+              "memory_usage_percent": 85,
+              "requests_per_second": 2000
+            },
+            "recent_incidents": [],
+            "configHub_revision": 145
+          }
+          EOF
+          
+          echo "Context gathered:"
+          cat deployment-context.json | jq .
+
+      - name: Worker asks Claude for deployment decision
+        id: ask-claude
+        run: |
+          echo "🤖 Asking Claude for deployment advice..."
+          
+          CONTEXT=$(cat deployment-context.json)
+          STAGE="${{ github.event.inputs.deployment-stage }}"
+          ANOMALY="${{ github.event.inputs.anomaly-type }}"
+          
+          # Simulate Claude API call
+          # In real implementation, this would use the Anthropic API
+          
+          echo "Worker: 'Claude, should I proceed with this deployment?'"
+          echo ""
+          
+          # Simulate Claude's response based on context
+          if [ "$ANOMALY" = "none" ] || [ "$STAGE" = "development" ]; then
+            PROCEED="true"
+            cat > claude-response.json << 'EOF'
+          {
+            "decision": "proceed",
+            "confidence": 0.95,
+            "reasoning": "All metrics are within normal ranges. No recent incidents detected. Safe to proceed with deployment.",
+            "advice": "Proceed with standard deployment. Monitor error rates for 10 minutes post-deployment.",
+            "risk_assessment": "low",
+            "additional_checks": []
+          }
+          EOF
+          elif [ "$ANOMALY" = "high-error-rate" ] && [ "$STAGE" = "production" ]; then
+            PROCEED="false"
+            cat > claude-response.json << 'EOF'
+          {
+            "decision": "abort",
+            "confidence": 0.90,
+            "reasoning": "Error rate of 5.2% is significantly above threshold. Deploying now could worsen the situation.",
+            "advice": "Do not proceed. Investigate current errors first. Consider rolling back recent changes.",
+            "risk_assessment": "critical",
+            "recommended_actions": [
+              "Check error logs for patterns",
+              "Verify external service dependencies",
+              "Consider emergency rollback",
+              "Alert on-call team"
+            ]
+          }
+          EOF
+          elif [ "$ANOMALY" = "memory-spike" ]; then
+            PROCEED="true"
+            cat > claude-response.json << 'EOF'
+          {
+            "decision": "proceed_with_caution",
+            "confidence": 0.75,
+            "reasoning": "Memory usage is high but the new version includes a memory leak fix. Deployment might help.",
+            "advice": "Proceed but with enhanced monitoring. The memory leak fix in this version should help.",
+            "risk_assessment": "medium",
+            "additional_checks": [
+              "Enable detailed memory profiling",
+              "Set up automatic rollback trigger at 95% memory",
+              "Have ops team on standby"
+            ]
+          }
+          EOF
+          else
+            PROCEED="true"
+            cat > claude-response.json << 'EOF'
+          {
+            "decision": "proceed_with_monitoring",
+            "confidence": 0.80,
+            "reasoning": "Some anomalies detected but within manageable range for this stage.",
+            "advice": "Proceed with deployment but with enhanced monitoring.",
+            "risk_assessment": "medium",
+            "additional_checks": ["Monitor key metrics closely for 30 minutes"]
+          }
+          EOF
+          fi
+          
+          # Output Claude's response
+          echo "Claude's response:"
+          cat claude-response.json | jq .
+          
+          ADVICE=$(jq -r .advice claude-response.json)
+          echo "proceed=$PROCEED" >> $GITHUB_OUTPUT
+          echo "advice=$ADVICE" >> $GITHUB_OUTPUT
+
+  update-configHub-with-decision:
+    runs-on: ubuntu-latest
+    needs: deployment-analysis
+    
+    steps:
+      - name: Record Claude's decision in ConfigHub
+        run: |
+          echo "📝 Recording Claude's decision in ConfigHub..."
+          
+          PROCEED="${{ needs.deployment-analysis.outputs.should-proceed }}"
+          ADVICE="${{ needs.deployment-analysis.outputs.claude-advice }}"
+          
+          # Create decision record for ConfigHub
+          cat > decision-record.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "workflow_run": "${{ github.run_id }}",
+            "decision_maker": "claude-ai",
+            "deployment": {
+              "stage": "${{ github.event.inputs.deployment-stage }}",
+              "version": "2.1.0",
+              "proceed": $PROCEED
+            },
+            "ai_advice": "$ADVICE",
+            "context": {
+              "anomaly_detected": "${{ github.event.inputs.anomaly-type }}",
+              "configHub_revision": 145
+            }
+          }
+          EOF
+          
+          echo "Decision record to be stored in ConfigHub:"
+          cat decision-record.json | jq .
+          
+          # Simulate ConfigHub update
+          # In real implementation: cub-actions record-decision --space $STAGE --decision decision-record.json
+          
+          echo "✅ Decision recorded in ConfigHub for audit trail"
+
+  execute-deployment:
+    runs-on: ubuntu-latest
+    needs: [deployment-analysis, update-configHub-with-decision]
+    if: needs.deployment-analysis.outputs.should-proceed == 'true'
+    
+    steps:
+      - name: Execute deployment with Claude's guidance
+        run: |
+          echo "🚀 Executing deployment based on Claude's advice..."
+          echo ""
+          echo "Claude said: ${{ needs.deployment-analysis.outputs.claude-advice }}"
+          echo ""
+          
+          # Simulate deployment with enhanced monitoring
+          echo "Deployment steps:"
+          echo "1. Pulling configuration from ConfigHub..."
+          echo "2. Applying pre-deployment checks..."
+          echo "3. Rolling out to ${{ github.event.inputs.deployment-stage }}..."
+          
+          # Add Claude's recommended monitoring
+          if [[ "${{ needs.deployment-analysis.outputs.claude-advice }}" == *"monitor"* ]]; then
+            echo "4. 📊 Enhanced monitoring enabled per Claude's recommendation"
+            echo "   - Error rate alerts: ON"
+            echo "   - Response time tracking: ON"
+            echo "   - Memory usage alerts: ON"
+          fi
+          
+          echo ""
+          echo "✅ Deployment completed with Claude's safety measures"
+
+  abort-deployment:
+    runs-on: ubuntu-latest
+    needs: [deployment-analysis, update-configHub-with-decision]
+    if: needs.deployment-analysis.outputs.should-proceed == 'false'
+    
+    steps:
+      - name: Abort deployment per Claude's recommendation
+        run: |
+          echo "🛑 DEPLOYMENT ABORTED"
+          echo ""
+          echo "Claude's recommendation: ${{ needs.deployment-analysis.outputs.claude-advice }}"
+          echo ""
+          echo "Actions taken:"
+          echo "1. ❌ Deployment cancelled"
+          echo "2. 📧 Notified ops team"
+          echo "3. 📊 Triggered diagnostic workflows"
+          echo "4. 💾 Saved context to ConfigHub for investigation"
+          
+          # Create incident record
+          cat > incident.json << EOF
+          {
+            "type": "deployment_blocked_by_ai",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "stage": "${{ github.event.inputs.deployment-stage }}",
+            "reason": "${{ needs.deployment-analysis.outputs.claude-advice }}",
+            "anomaly": "${{ github.event.inputs.anomaly-type }}",
+            "follow_up_required": true
+          }
+          EOF
+          
+          echo ""
+          echo "Incident recorded for follow-up:"
+          cat incident.json | jq .
+
+  worker-summary:
+    runs-on: ubuntu-latest
+    needs: [deployment-analysis, execute-deployment, abort-deployment]
+    if: always()
+    
+    steps:
+      - name: Worker summarizes Claude interaction
+        run: |
+          echo "========================================"
+          echo "🔧 WORKER-CLAUDE INTERACTION SUMMARY"
+          echo "========================================"
+          echo ""
+          echo "Scenario: Worker needed help deciding on deployment"
+          echo "Stage: ${{ github.event.inputs.deployment-stage }}"
+          echo "Anomaly: ${{ github.event.inputs.anomaly-type }}"
+          echo ""
+          echo "What happened:"
+          echo "1. Worker detected deployment request"
+          echo "2. Worker gathered context and metrics"
+          echo "3. Worker asked Claude for advice"
+          echo "4. Claude analyzed the situation and provided guidance"
+          echo "5. Worker followed Claude's recommendation"
+          echo "6. All decisions recorded in ConfigHub"
+          echo ""
+          
+          PROCEED="${{ needs.deployment-analysis.outputs.should-proceed }}"
+          if [ "$PROCEED" = "true" ]; then
+            echo "Result: ✅ Deployment proceeded with Claude's safety measures"
+          else
+            echo "Result: 🛑 Deployment aborted based on Claude's risk assessment"
+          fi
+          
+          echo ""
+          echo "ConfigHub Integration:"
+          echo "- All decisions tracked in ConfigHub"
+          echo "- Full audit trail maintained"
+          echo "- Context preserved for future analysis"
+          echo ""
+          echo "This demonstrates how workers can leverage Claude's"
+          echo "intelligence for complex decisions while maintaining"
+          echo "full traceability through ConfigHub."
+          echo "========================================"

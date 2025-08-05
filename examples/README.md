@@ -38,6 +38,10 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 14. **[workflow-diff-testing.yml](workflow-diff-testing.yml)** - Compare different workflow versions
 15. **[gitops-preview.yml](gitops-preview.yml)** - Preview GitOps changes without GitHub
 
+### AI Integration Examples
+16. **[claude-orchestrated-ops.yml](claude-orchestrated-ops.yml)** - Claude orchestrates operations using ConfigHub
+17. **[worker-calls-claude.yml](worker-calls-claude.yml)** - Workers consult Claude for intelligent decisions
+
 ## Why Each Example Matters
 
 ### 1. hello-world.yml
@@ -115,6 +119,16 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 **Solution:** Preview and apply GitOps changes using ConfigHub spaces as logical environments, no git branches needed.  
 **Use When:** Implementing GitOps workflows, promoting configurations between environments, or syncing spaces.
 
+### 16. claude-orchestrated-ops.yml
+**Problem:** Complex operational decisions require human expertise, causing delays and inconsistency.  
+**Solution:** Claude AI orchestrates operations by analyzing requests, making decisions, and updating ConfigHub with full audit trails.  
+**Use When:** Automating operational workflows, scaling decisions, or handling complex deployment scenarios with AI assistance.
+
+### 17. worker-calls-claude.yml
+**Problem:** Workers encounter situations requiring intelligent decision-making beyond simple rules.  
+**Solution:** Workers can consult Claude for real-time advice on deployments, using ConfigHub to track all decisions and maintain audit trails.  
+**Use When:** Deployment decisions need context-aware intelligence, anomaly detection requires expert analysis, or risk assessment needs AI assistance.
+
 ## Running Examples
 
 ### Basic Usage
@@ -175,6 +189,21 @@ cub-actions simulate-trigger examples/config-triggered-workflow.yml \
   --path spec.replicas \
   --old-value 3 \
   --new-value 5
+```
+
+### AI Integration Examples
+
+```bash
+# Claude orchestrates operations
+cub-actions run examples/claude-orchestrated-ops.yml \
+  --input operation-request="Check system health and scale if needed" \
+  --secrets-file claude-api.env
+
+# Worker asks Claude for deployment advice
+cub-actions run examples/worker-calls-claude.yml \
+  --input deployment-stage=production \
+  --input anomaly-type=high-error-rate \
+  --secrets-file claude-api.env
 ```
 
 ## Tips
