@@ -16,10 +16,10 @@ import (
 
 // ActRunner wraps the act library for workflow execution
 type ActRunner struct {
-	platform       string
-	containerImage string
+	platform        string
+	containerImage  string
 	reuseContainers bool
-	executions     sync.Map // map[string]*ExecutionRecord
+	executions      sync.Map // map[string]*ExecutionRecord
 }
 
 // ExecutionRecord tracks a workflow execution
@@ -53,23 +53,23 @@ func (ar *ActRunner) Validate(workflowData []byte) error {
 		return fmt.Errorf("create temp file: %w", err)
 	}
 	defer os.Remove(tempFile.Name())
-	
+
 	if err := os.WriteFile(tempFile.Name(), workflowData, 0644); err != nil {
 		return fmt.Errorf("write workflow: %w", err)
 	}
-	
+
 	// Read and parse workflow
 	planner, err := model.NewWorkflowPlanner(tempFile.Name(), false, false)
 	if err != nil {
 		return fmt.Errorf("parse workflow: %w", err)
 	}
-	
+
 	// Try to get plan for workflow_dispatch event
 	_, err = planner.PlanEvent("workflow_dispatch")
 	if err != nil {
 		return fmt.Errorf("plan workflow: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -94,79 +94,79 @@ func (ar *ActRunner) Execute(ctx *ExecutionContext) (*ExecutionResult, error) {
 		Logs:      []string{},
 		Artifacts: []string{},
 	}
-	
+
 	// Prepare event file
 	eventPath, err := ar.prepareEvent(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("prepare event: %w", err)
 	}
-	
+
 	// Create act runner config
 	config := &runner.Config{
-		EventPath:     eventPath,
-		EventName:     "workflow_dispatch", // Default event
+		EventPath: eventPath,
+		EventName: "workflow_dispatch", // Default event
 		Platforms: map[string]string{
-			"ubuntu-latest":   ar.containerImage,
-			"ubuntu-22.04":    ar.containerImage,
-			"ubuntu-20.04":    ar.containerImage,
-			"ubuntu-18.04":    ar.containerImage,
+			"ubuntu-latest": ar.containerImage,
+			"ubuntu-22.04":  ar.containerImage,
+			"ubuntu-20.04":  ar.containerImage,
+			"ubuntu-18.04":  ar.containerImage,
 		},
-		Secrets:         ctx.Secrets,
-		Env:             ctx.Environment,
-		Privileged:      false,
-		UsernsMode:      "auto",
-		ReuseContainers: ar.reuseContainers,
-		BindWorkdir:     false,
-		Workdir:         ctx.Workspace.Root,
+		Secrets:            ctx.Secrets,
+		Env:                ctx.Environment,
+		Privileged:         false,
+		UsernsMode:         "auto",
+		ReuseContainers:    ar.reuseContainers,
+		BindWorkdir:        false,
+		Workdir:            ctx.Workspace.Root,
 		ArtifactServerPath: ctx.Workspace.OutputDir,
-		Actor:          "confighub",
-		InsecureSecrets: false,
-		LogOutput:      true,
+		Actor:              "confighub",
+		InsecureSecrets:    false,
+		LogOutput:          true,
 	}
-	
+
 	// Create runner
 	actRunner, err := runner.New(config)
 	if err != nil {
 		return nil, fmt.Errorf("create runner: %w", err)
 	}
-	
+
 	// Run the workflow
 	runnerCtx := context.Background()
-	
+
 	// Read workflow file
 	workflowPath := filepath.Join(ctx.Workspace.WorkflowDir, "workflow.yml")
 	planner, err := model.NewWorkflowPlanner(workflowPath, false, false)
 	if err != nil {
 		return nil, fmt.Errorf("create workflow planner: %w", err)
 	}
-	
+
 	// Get the plan
 	plan, err := planner.PlanEvent(config.EventName)
 	if err != nil {
 		return nil, fmt.Errorf("plan event: %w", err)
 	}
-	
+
 	// Create executor
 	executor := actRunner.NewPlanExecutor(plan).Finally(func(_ context.Context) error {
 		return nil
 	})
-	
+
 	// Execute the plan
 	err = executor(runnerCtx)
-	
+
 	result.EndTime = time.Now()
 	result.Duration = result.EndTime.Sub(result.StartTime)
-	
+
 	if err != nil {
 		result.ExitCode = 1
 		// Don't return error, capture it in result
 		result.Logs = append(result.Logs, fmt.Sprintf("ERROR: %v", err))
 	}
-	
+
 	// Collect artifacts
 	artifacts, _ := ctx.Workspace.GetArtifacts()
 	result.Artifacts = artifacts
-	
+
 	// Store execution record
 	record := &ExecutionRecord{
 		ID:         execID,
@@ -181,7 +181,7 @@ func (ar *ActRunner) Execute(ctx *ExecutionContext) (*ExecutionResult, error) {
 		Timestamp:  time.Now(),
 	}
 	ar.executions.Store(ctx.Metadata.Unit, record)
-	
+
 	return result, nil
 }
 
@@ -204,8 +204,8 @@ func (ar *ActRunner) prepareEvent(ctx *ExecutionContext) (string, error) {
 			"revision": fmt.Sprintf("%d", ctx.Metadata.Revision),
 		},
 		"repository": map[string]interface{}{
-			"name":       ctx.Metadata.Unit,
-			"full_name":  fmt.Sprintf("confighub/%s/%s", ctx.Metadata.Space, ctx.Metadata.Unit),
+			"name":      ctx.Metadata.Unit,
+			"full_name": fmt.Sprintf("confighub/%s/%s", ctx.Metadata.Space, ctx.Metadata.Unit),
 			"owner": map[string]interface{}{
 				"login": "confighub",
 			},
@@ -217,23 +217,23 @@ func (ar *ActRunner) prepareEvent(ctx *ExecutionContext) (string, error) {
 		"ref": "refs/heads/main",
 		"sha": fmt.Sprintf("%040d", ctx.Metadata.Revision),
 	}
-	
+
 	// Merge with custom event payload
 	for k, v := range ctx.EventPayload {
 		event[k] = v
 	}
-	
+
 	data, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
 		return "", err
 	}
-	
+
 	// Act expects event files in .github directory
 	githubDir := filepath.Join(ctx.Workspace.Root, ".github")
 	if err := os.MkdirAll(githubDir, 0755); err != nil {
 		return "", fmt.Errorf("create .github dir: %w", err)
 	}
-	
+
 	eventPath := filepath.Join(githubDir, "event.json")
 	return eventPath, os.WriteFile(eventPath, data, 0644)
 }
@@ -241,34 +241,34 @@ func (ar *ActRunner) prepareEvent(ctx *ExecutionContext) (string, error) {
 // prepareSecrets creates the secrets file
 func (ar *ActRunner) prepareSecrets(ctx *ExecutionContext) (string, error) {
 	secretsPath := filepath.Join(ctx.Workspace.SecretDir, ".secrets")
-	
+
 	file, err := os.Create(secretsPath)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
-	
+
 	for k, v := range ctx.Secrets {
 		fmt.Fprintf(file, "%s=%s\n", k, v)
 	}
-	
+
 	return secretsPath, nil
 }
 
 // prepareEnvironment creates the environment file
 func (ar *ActRunner) prepareEnvironment(ctx *ExecutionContext) (string, error) {
 	envPath := filepath.Join(ctx.Workspace.Root, ".env")
-	
+
 	file, err := os.Create(envPath)
 	if err != nil {
 		return "", err
 	}
 	defer file.Close()
-	
+
 	for k, v := range ctx.Environment {
 		fmt.Fprintf(file, "%s=%s\n", k, v)
 	}
-	
+
 	return envPath, nil
 }
 

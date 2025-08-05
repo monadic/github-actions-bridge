@@ -3,10 +3,10 @@ package bridge
 import (
 	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v3"
 	"os"
 	"path/filepath"
 	"strings"
-	"gopkg.in/yaml.v3"
 )
 
 // ConfigInjector handles configuration injection into workspaces
@@ -29,17 +29,17 @@ func (ci *ConfigInjector) InjectConfigs(configs map[string]interface{}) error {
 			return fmt.Errorf("write config %s: %w", key, err)
 		}
 	}
-	
+
 	// Create consolidated config files
 	if err := ci.writeConsolidatedConfigs(configs); err != nil {
 		return fmt.Errorf("write consolidated configs: %w", err)
 	}
-	
+
 	// Create environment file for simple values
 	if err := ci.createEnvFile(configs); err != nil {
 		return fmt.Errorf("create env file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -49,7 +49,7 @@ func (ci *ConfigInjector) writeConfigFile(key string, value interface{}) error {
 	var data []byte
 	var ext string
 	var err error
-	
+
 	switch v := value.(type) {
 	case string:
 		// Plain text file
@@ -70,10 +70,10 @@ func (ci *ConfigInjector) writeConfigFile(key string, value interface{}) error {
 		}
 		ext = ".json"
 	}
-	
+
 	filename := fmt.Sprintf("%s%s", key, ext)
 	path := filepath.Join(ci.workspace.ConfigDir, filename)
-	
+
 	return os.WriteFile(path, data, 0644)
 }
 
@@ -88,7 +88,7 @@ func (ci *ConfigInjector) writeConsolidatedConfigs(configs map[string]interface{
 	if err := os.WriteFile(jsonPath, jsonData, 0644); err != nil {
 		return fmt.Errorf("write json: %w", err)
 	}
-	
+
 	// Write as YAML
 	yamlPath := filepath.Join(ci.workspace.ConfigDir, "config.yaml")
 	yamlData, err := yaml.Marshal(configs)
@@ -98,7 +98,7 @@ func (ci *ConfigInjector) writeConsolidatedConfigs(configs map[string]interface{
 	if err := os.WriteFile(yamlPath, yamlData, 0644); err != nil {
 		return fmt.Errorf("write yaml: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -110,29 +110,29 @@ func (ci *ConfigInjector) createEnvFile(configs map[string]interface{}) error {
 		return err
 	}
 	defer file.Close()
-	
+
 	// Write header
 	fmt.Fprintln(file, "# ConfigHub injected configuration")
 	fmt.Fprintln(file, "# Generated automatically - DO NOT EDIT")
 	fmt.Fprintln(file)
-	
+
 	// Convert configs to environment variables
 	flatConfigs := ci.flattenConfigs(configs, "CONFIG")
-	
+
 	for key, value := range flatConfigs {
 		fmt.Fprintf(file, "%s=%s\n", key, value)
 	}
-	
+
 	return nil
 }
 
 // flattenConfigs flattens nested configs into environment variables
 func (ci *ConfigInjector) flattenConfigs(configs map[string]interface{}, prefix string) map[string]string {
 	flat := make(map[string]string)
-	
+
 	for key, value := range configs {
 		envKey := fmt.Sprintf("%s_%s", prefix, strings.ToUpper(key))
-		
+
 		switch v := value.(type) {
 		case string:
 			flat[envKey] = v
@@ -153,7 +153,7 @@ func (ci *ConfigInjector) flattenConfigs(configs map[string]interface{}, prefix 
 			}
 		}
 	}
-	
+
 	return flat
 }
 
@@ -164,13 +164,13 @@ func (ci *ConfigInjector) InjectWorkflowConfig(workflowPath string, configs map[
 	if err != nil {
 		return fmt.Errorf("read workflow: %w", err)
 	}
-	
+
 	// Parse workflow
 	var workflow map[string]interface{}
 	if err := yaml.Unmarshal(data, &workflow); err != nil {
 		return fmt.Errorf("parse workflow: %w", err)
 	}
-	
+
 	// Inject environment variables at job level
 	if jobs, ok := workflow["jobs"].(map[string]interface{}); ok {
 		for _, job := range jobs {
@@ -188,32 +188,32 @@ func (ci *ConfigInjector) InjectWorkflowConfig(workflowPath string, configs map[
 			}
 		}
 	}
-	
+
 	// Write back modified workflow
 	modifiedData, err := yaml.Marshal(workflow)
 	if err != nil {
 		return fmt.Errorf("marshal workflow: %w", err)
 	}
-	
+
 	return os.WriteFile(workflowPath, modifiedData, 0644)
 }
 
 // CreateConfigScript creates a script that exports all configs
 func (ci *ConfigInjector) CreateConfigScript(configs map[string]interface{}) error {
 	scriptPath := filepath.Join(ci.workspace.ConfigDir, "load-configs.sh")
-	
+
 	file, err := os.Create(scriptPath)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	
+
 	// Write shebang and header
 	fmt.Fprintln(file, "#!/bin/bash")
 	fmt.Fprintln(file, "# ConfigHub configuration loader")
 	fmt.Fprintln(file, "# Source this file to load all configurations")
 	fmt.Fprintln(file)
-	
+
 	// Export all configs
 	flat := ci.flattenConfigs(configs, "CONFIG")
 	for key, value := range flat {
@@ -221,19 +221,19 @@ func (ci *ConfigInjector) CreateConfigScript(configs map[string]interface{}) err
 		escaped := strings.ReplaceAll(value, "'", "'\"'\"'")
 		fmt.Fprintf(file, "export %s='%s'\n", key, escaped)
 	}
-	
+
 	// Add helper functions
 	fmt.Fprintln(file, "\n# Helper functions")
 	fmt.Fprintln(file, "config_get() {")
 	fmt.Fprintln(file, "  local key=\"CONFIG_${1^^}\"")
 	fmt.Fprintln(file, "  echo \"${!key}\"")
 	fmt.Fprintln(file, "}")
-	
+
 	fmt.Fprintln(file, "\nconfig_has() {")
 	fmt.Fprintln(file, "  local key=\"CONFIG_${1^^}\"")
 	fmt.Fprintln(file, "  [[ -n \"${!key}\" ]]")
 	fmt.Fprintln(file, "}")
-	
+
 	// Make executable
 	return os.Chmod(scriptPath, 0755)
 }
@@ -245,11 +245,11 @@ func (ci *ConfigInjector) ValidateConfigs(configs map[string]interface{}) error 
 		if key == "" {
 			return fmt.Errorf("empty configuration key")
 		}
-		
+
 		if strings.ContainsAny(key, " \t\n\r/\\") {
 			return fmt.Errorf("invalid characters in key: %s", key)
 		}
-		
+
 		// Validate value size
 		if data, err := json.Marshal(value); err == nil {
 			if len(data) > 1024*1024 { // 1MB limit per config
@@ -257,6 +257,6 @@ func (ci *ConfigInjector) ValidateConfigs(configs map[string]interface{}) error 
 			}
 		}
 	}
-	
+
 	return nil
 }
