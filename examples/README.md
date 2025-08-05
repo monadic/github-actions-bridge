@@ -135,103 +135,109 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 
 ```bash
 # Run a simple example
-cub-actions run examples/hello-world.yml
+cub unit create --space default hello examples/hello-world.yml
+cub unit apply --space default hello
 
 # Run with verbose output
-cub-actions run examples/hello-world.yml -v
+cub unit apply --space default hello --debug
 
 # Dry run to see what would happen
-cub-actions run examples/hello-world.yml --dry-run
+cub unit create --space default hello examples/hello-world.yml --dry-run
 ```
 
 ### With Secrets
 
 ```bash
-# Create a secrets file
+# Create a secrets file (for local testing)
 echo "API_KEY=your-secret-key" > secrets.env
 echo "DATABASE_URL=postgres://localhost/db" >> secrets.env
 
-# Run workflow with secrets
-cub-actions run examples/with-secrets.yml --secrets-file secrets.env
+# Run workflow with ConfigHub managing secrets
+cub unit create --space default secrets-demo examples/with-secrets.yml
+cub unit apply --space default secrets-demo
+# Secrets are securely managed by ConfigHub
 ```
 
 ### With ConfigHub Integration
 
 ```bash
 # Run with ConfigHub space and unit
-cub-actions run examples/config-driven-deployment.yml \
-  --space production \
-  --unit webapp
+cub unit create --space production webapp examples/config-driven-deployment.yml
+cub unit apply --space production webapp
 
 # Time travel testing
-cub-actions run examples/time-travel-testing.yml \
-  --as-of "2024-01-01" \
-  --space staging
+cub unit create --space staging time-travel examples/time-travel-testing.yml
+cub unit apply --space staging time-travel --restore 1
 
 # Preview GitOps changes
-cub-actions run examples/gitops-preview.yml \
-  --source-space development \
-  --target-space production \
-  --dry-run
+cub unit create --space production gitops examples/gitops-preview.yml
+cub unit get --space production gitops --extended
+# Use ConfigHub's space management for GitOps workflows
 ```
 
 ### Advanced Features
 
 ```bash
 # Compare workflow versions
-cub-actions diff examples/workflow-diff-testing.yml \
-  --version proposed \
-  --space production
+cub revision list --space production --where "UnitSlug = 'workflow-diff'"
+cub revision diff --space production workflow-diff --from 1 --to 2
 
 # Test config-triggered workflows
-cub-actions simulate-trigger examples/config-triggered-workflow.yml \
-  --event config.changed \
-  --path spec.replicas \
-  --old-value 3 \
-  --new-value 5
+cub unit create --space production config-trigger examples/config-triggered-workflow.yml
+cub trigger create --space production config-change \
+  --unit config-trigger \
+  --event "config.changed"
 ```
 
 ### AI Integration Examples
 
 ```bash
 # Claude orchestrates operations
-cub-actions run examples/claude-orchestrated-ops.yml \
-  --input operation-request="Check system health and scale if needed" \
-  --secrets-file claude-api.env
+cub unit create --space production claude-ops examples/claude-orchestrated-ops.yml
+# Set the operation request in ConfigHub
+cub unit set --space production claude-ops \
+  --key operation-request \
+  --value "Check system health and scale if needed"
+cub unit apply --space production claude-ops
 
 # Worker asks Claude for deployment advice
-cub-actions run examples/worker-calls-claude.yml \
-  --input deployment-stage=production \
-  --input anomaly-type=high-error-rate \
-  --secrets-file claude-api.env
+cub unit create --space production claude-worker examples/worker-calls-claude.yml
+cub unit set --space production claude-worker \
+  --key deployment-stage --value production \
+  --key anomaly-type --value high-error-rate
+cub unit apply --space production claude-worker
 ```
 
 ## Tips
 
 1. **Validate First**: Always validate your workflow before running:
    ```bash
-   cub-actions validate examples/your-workflow.yml
+   cub unit create --space default test examples/your-workflow.yml --dry-run
    ```
 
 2. **Check Limitations**: Some GitHub Actions features don't work locally:
    ```bash
-   cub-actions list-limitations
+   # Check ConfigHub and act documentation for limitations
+   cub help
    ```
 
 3. **Debug Issues**: Use verbose mode to see detailed execution:
    ```bash
-   cub-actions run examples/your-workflow.yml -v
+   cub unit apply --space default your-workflow --debug
    ```
 
 4. **Test with Different Configs**: Use ConfigHub spaces to test with various configurations:
    ```bash
-   cub-actions run examples/config-driven-deployment.yml --space staging
-   cub-actions run examples/config-driven-deployment.yml --space production
+   cub unit create --space staging deploy examples/config-driven-deployment.yml
+   cub unit create --space production deploy examples/config-driven-deployment.yml
+   cub unit apply --space staging deploy
+   cub unit apply --space production deploy
    ```
 
 5. **Preview Changes**: Always preview before applying:
    ```bash
-   cub-actions run examples/gitops-preview.yml --dry-run
+   cub unit create --space default preview examples/gitops-preview.yml --dry-run
+   cub unit get --space default preview --extended
    ```
 
 ## Understanding the ConfigHub Advantage

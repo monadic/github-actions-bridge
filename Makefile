@@ -2,7 +2,7 @@
 
 # Variables
 BINARY_NAME=actions-bridge
-CLI_NAME=cub-actions
+WORKER_NAME=cub-worker-actions
 GO=go
 GOFLAGS=-v
 DOCKER_IMAGE=confighub/actions-bridge
@@ -13,17 +13,17 @@ LDFLAGS=-ldflags "-X main.Version=$(VERSION)"
 all: build
 
 # Build all binaries
-build: build-bridge build-cli build-act-test
+build: build-bridge build-worker build-act-test
 
 # Build the main bridge
 build-bridge:
 	@echo "Building $(BINARY_NAME)..."
 	$(GO) build $(GOFLAGS) $(LDFLAGS) -o bin/$(BINARY_NAME) ./cmd/actions-bridge
 
-# Build the CLI
-build-cli:
-	@echo "Building $(CLI_NAME)..."
-	$(GO) build $(GOFLAGS) $(LDFLAGS) -o bin/$(CLI_NAME) ./cmd/actions-cli
+# Build the worker (formerly CLI)
+build-worker:
+	@echo "Building $(WORKER_NAME)..."
+	$(GO) build $(GOFLAGS) $(LDFLAGS) -o bin/$(WORKER_NAME) ./cmd/actions-cli
 
 # Build the act test
 build-act-test:
@@ -49,7 +49,7 @@ act-test: build-act-test
 install: build
 	@echo "Installing binaries..."
 	$(GO) install ./cmd/actions-bridge
-	$(GO) install ./cmd/actions-cli
+	@echo "Note: The worker binary $(WORKER_NAME) should be deployed as a ConfigHub worker"
 
 # Build Docker image
 docker:
@@ -89,12 +89,10 @@ run-bridge: build-bridge
 	ACTIONS_BRIDGE_BASE_DIR=/tmp/actions-bridge ./bin/$(BINARY_NAME)
 
 # Run a quick example
-example: build-cli
-	@echo "Running example workflow..."
-	./bin/$(CLI_NAME) run test/fixtures/workflows/simple.yml \
-		--space dev \
-		--unit example \
-		--dry-run
+example: build-worker
+	@echo "Note: To run workflows, use the ConfigHub CLI:"
+	@echo "  cub unit create --space dev example test/fixtures/workflows/simple.yml"
+	@echo "  cub unit apply --space dev example"
 
 # Generate mocks for testing
 mocks:
@@ -114,22 +112,22 @@ release: clean
 	GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) \
 		-o dist/$(BINARY_NAME)-linux-amd64 ./cmd/actions-bridge
 	GOOS=linux GOARCH=amd64 $(GO) build $(LDFLAGS) \
-		-o dist/$(CLI_NAME)-linux-amd64 ./cmd/actions-cli
+		-o dist/$(WORKER_NAME)-linux-amd64 ./cmd/actions-cli
 	# Linux ARM64
 	GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) \
 		-o dist/$(BINARY_NAME)-linux-arm64 ./cmd/actions-bridge
 	GOOS=linux GOARCH=arm64 $(GO) build $(LDFLAGS) \
-		-o dist/$(CLI_NAME)-linux-arm64 ./cmd/actions-cli
+		-o dist/$(WORKER_NAME)-linux-arm64 ./cmd/actions-cli
 	# Darwin AMD64
 	GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) \
 		-o dist/$(BINARY_NAME)-darwin-amd64 ./cmd/actions-bridge
 	GOOS=darwin GOARCH=amd64 $(GO) build $(LDFLAGS) \
-		-o dist/$(CLI_NAME)-darwin-amd64 ./cmd/actions-cli
+		-o dist/$(WORKER_NAME)-darwin-amd64 ./cmd/actions-cli
 	# Darwin ARM64
 	GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) \
 		-o dist/$(BINARY_NAME)-darwin-arm64 ./cmd/actions-bridge
 	GOOS=darwin GOARCH=arm64 $(GO) build $(LDFLAGS) \
-		-o dist/$(CLI_NAME)-darwin-arm64 ./cmd/actions-cli
+		-o dist/$(WORKER_NAME)-darwin-arm64 ./cmd/actions-cli
 	@echo "Release artifacts built in dist/"
 
 # Help

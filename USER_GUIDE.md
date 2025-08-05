@@ -61,7 +61,7 @@ Before you start, you'll need:
 
 ## Installation
 
-### Option 1: Download Pre-built Binaries (Easiest)
+### Option 1: Install ConfigHub CLI (Easiest)
 
 ```bash
 # First, install act (if not already installed)
@@ -71,13 +71,17 @@ brew install act  # macOS
 # Verify act is installed
 act --version
 
-# Download the latest release (example for Mac)
-curl -L https://github.com/confighub/actions-bridge/releases/latest/download/cub-actions-darwin-arm64 -o cub-actions
-chmod +x cub-actions
-sudo mv cub-actions /usr/local/bin/
+# Install ConfigHub CLI (includes the actions-bridge worker)
+curl -fsSL https://hub.confighub.com/cub/install.sh | bash
+
+# Add to PATH if needed
+sudo ln -sf ~/.confighub/bin/cub /usr/local/bin/cub
 
 # Test it works
-cub-actions version
+cub --version
+
+# Login to ConfigHub
+cub auth login
 ```
 
 ### Option 2: Build from Source
@@ -91,7 +95,7 @@ cd actions-bridge
 make build
 
 # The binaries will be in ./bin/
-./bin/cub-actions version
+./bin/actions-bridge --version
 ```
 
 ## Your First Workflow
@@ -123,7 +127,11 @@ jobs:
 ### Step 2: Run the workflow
 
 ```bash
-cub-actions run hello.yml
+# Create a ConfigHub unit for the workflow
+cub unit create --space default hello hello.yml
+
+# Apply (run) the workflow
+cub unit apply --space default hello
 ```
 
 You should see output like:
@@ -137,11 +145,11 @@ Exit code: 0
 ### Step 3: Run with more details
 
 ```bash
-# See what would happen without running
-cub-actions run hello.yml --dry-run
+# See workflow details without running
+cub unit get --space default hello --extended
 
-# See detailed logs
-cub-actions run hello.yml --verbose
+# Apply with verbose output
+cub unit apply --space default hello --debug
 ```
 
 **Congratulations!** You've just run your first GitHub Actions workflow locally. Let's explore more features.
@@ -197,7 +205,9 @@ jobs:
 
 3. **Run with secrets**:
 ```bash
-cub-actions run deploy.yml --secrets-file secrets.env
+# Create unit and ConfigHub manages secrets
+cub unit create --space production deploy deploy.yml
+cub unit apply --space production deploy
 ```
 
 **Security Notes:**
@@ -231,27 +241,29 @@ export CONFIGHUB_URL=https://api.confighub.com
 3. **Run workflows with ConfigHub**:
 ```bash
 # Use configurations from ConfigHub
-cub-actions run deploy.yml --space production --unit webapp
+cub unit create --space production webapp deploy.yml
+cub unit apply --space production webapp
 
 # Test with different environments
-cub-actions run deploy.yml --space staging --unit webapp
-cub-actions run deploy.yml --space development --unit webapp
+cub unit create --space staging webapp deploy.yml
+cub unit apply --space staging webapp
+cub unit create --space development webapp deploy.yml
+cub unit apply --space development webapp
 ```
 
 ### Advanced ConfigHub Features
 
 **Time Travel Testing:**
 ```bash
-# Test with last week's configuration
-cub-actions run deploy.yml --space prod --as-of "2024-01-01"
+# Test with a previous revision
+cub unit apply --space prod webapp --restore 1
 ```
 
 **Configuration-Driven Workflows:**
 ```bash
 # All values come from ConfigHub
-cub-actions run examples/config-driven-deployment.yml \
-  --space production \
-  --unit webapp
+cub unit create --space production config-deploy examples/config-driven-deployment.yml
+cub unit apply --space production config-deploy
 ```
 
 See the [ConfigHub examples](examples/) for more advanced use cases.
@@ -269,7 +281,9 @@ DEBUG=true
 
 Run with environment:
 ```bash
-cub-actions run workflow.yml --env-file dev.env
+# Environment variables are managed through ConfigHub
+cub unit create --space dev myworkflow workflow.yml
+cub unit apply --space dev myworkflow
 ```
 
 ### 3. Collecting Artifacts
@@ -293,7 +307,10 @@ jobs:
 
 Run and save artifacts:
 ```bash
-cub-actions run build.yml --artifact-dir ./my-artifacts
+# Create unit and run with ConfigHub
+cub unit create --space default build build.yml
+cub unit apply --space default build
+# Artifacts are managed through ConfigHub workers
 ```
 
 ### 4. Validating Workflows
@@ -301,7 +318,8 @@ cub-actions run build.yml --artifact-dir ./my-artifacts
 Before running, check if a workflow will work:
 
 ```bash
-cub-actions validate workflow.yml
+# Validate by creating a unit without applying
+cub unit create --space default test-workflow workflow.yml --dry-run
 ```
 
 This will tell you about:
@@ -330,7 +348,9 @@ Some GitHub Actions features don't work locally:
 
 To see all limitations:
 ```bash
-cub-actions list-limitations
+# Check ConfigHub documentation for limitations
+cub help
+# Or refer to act documentation for execution limitations
 ```
 
 ## Troubleshooting
@@ -378,9 +398,10 @@ ERROR: workflow not supported: Container jobs are not fully supported
 ```
 
 **Solution**:
-Some features aren't supported locally. Check the limitations with:
+Some features aren't supported locally. Check the workflow compatibility:
 ```bash
-cub-actions validate workflow.yml
+# Try creating the unit to see if it's valid
+cub unit create --space default test workflow.yml --dry-run
 ```
 
 ### "Permission denied"
@@ -393,10 +414,10 @@ ERROR: Permission denied
 **Solution**:
 ```bash
 # Make the binary executable
-chmod +x cub-actions
+chmod +x ~/.confighub/bin/cub
 
-# Or use sudo if needed
-sudo cub-actions run workflow.yml
+# Or reinstall ConfigHub CLI
+curl -fsSL https://hub.confighub.com/cub/install.sh | bash
 ```
 
 ### Workflow runs but does nothing
@@ -421,7 +442,9 @@ on: workflow_dispatch  # Manual trigger
 
 Use specific runner images:
 ```bash
-cub-actions run workflow.yml --platform linux/arm64
+# Platform is configured in the worker settings
+cub worker create --platform linux/arm64 my-arm-worker
+cub unit apply --space default myworkflow --worker my-arm-worker
 ```
 
 ### 3. Debugging Workflows
@@ -479,18 +502,19 @@ If you're stuck:
 
 1. Check the built-in help:
    ```bash
-   cub-actions --help
-   cub-actions run --help
+   cub --help
+   cub unit --help
+   cub worker --help
    ```
 
 2. Validate your workflow:
    ```bash
-   cub-actions validate workflow.yml
+   cub unit create --space default test workflow.yml --dry-run
    ```
 
 3. Run with verbose logging:
    ```bash
-   cub-actions run workflow.yml --verbose
+   cub unit apply --space default myworkflow --debug
    ```
 
 4. Check the [README](README.md) for more technical details
@@ -528,16 +552,16 @@ Check out our [15+ example workflows](examples/) that demonstrate:
 
 ```bash
 # Essential commands you'll use daily
-cub-actions run workflow.yml              # Run a workflow
-cub-actions validate workflow.yml         # Check compatibility
-cub-actions run workflow.yml --dry-run    # Preview execution
-cub-actions run workflow.yml -v           # Debug with verbose output
-cub-actions list-limitations              # See what's not supported
+cub unit create --space default myworkflow workflow.yml   # Create workflow unit
+cub unit apply --space default myworkflow                 # Run a workflow
+cub unit get --space default myworkflow --extended        # Check workflow details
+cub unit apply --space default myworkflow --debug         # Debug with verbose output
+cub help                                                  # See ConfigHub help
 
-# With configurations
-cub-actions run workflow.yml --secrets-file secrets.env
-cub-actions run workflow.yml --space production --unit webapp
-cub-actions run workflow.yml --as-of "2024-01-01"
+# With different spaces
+cub unit create --space production webapp deploy.yml
+cub unit apply --space production webapp
+cub unit apply --space production webapp --restore 1      # Use previous revision
 ```
 
 **Remember:** The goal is to make your CI/CD development faster and more reliable. Start simple, then explore the advanced features as you need them.

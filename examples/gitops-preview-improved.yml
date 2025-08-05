@@ -1,0 +1,351 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: gitops-preview-improved
+name: GitOps Preview (Fixed)
+on:
+  workflow_dispatch:
+    inputs:
+      source-space:
+        description: 'Source ConfigHub space'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+      target-space:
+        description: 'Target ConfigHub space'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      dry-run:
+        description: 'Preview only (no actual changes)'
+        type: boolean
+        default: true
+
+jobs:
+  fetch-configurations:
+    runs-on: ubuntu-latest
+    outputs:
+      source-configs: ${{ steps.source.outputs.configs }}
+      target-configs: ${{ steps.target.outputs.configs }}
+    
+    steps:
+      - name: Fetch source space configs
+        id: source
+        run: |
+          echo "Fetching configurations from ${{ github.event.inputs.source-space }}..."
+          
+          # Simulate ConfigHub config fetch
+          if [ "${{ github.event.inputs.source-space }}" = "development" ]; then
+            CONFIGS='[{"unit":"webapp","version":"2.1.0-dev","replicas":2},{"unit":"api","version":"3.0.0-dev","replicas":2},{"unit":"worker","version":"1.5.0-dev","replicas":1}]'
+          else
+            CONFIGS='[{"unit":"webapp","version":"2.0.0","replicas":3},{"unit":"api","version":"2.9.0","replicas":3},{"unit":"worker","version":"1.4.0","replicas":2}]'
+          fi
+          
+          # Use proper output format
+          echo "configs<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONFIGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "✓ Found $(echo $CONFIGS | jq length) configurations"
+      
+      - name: Fetch target space configs
+        id: target
+        run: |
+          echo "Fetching configurations from ${{ github.event.inputs.target-space }}..."
+          
+          # Simulate target space configs
+          if [ "${{ github.event.inputs.target-space }}" = "production" ]; then
+            CONFIGS='[{"unit":"webapp","version":"1.9.0","replicas":5},{"unit":"api","version":"2.8.0","replicas":5},{"unit":"worker","version":"1.3.0","replicas":3}]'
+          else
+            CONFIGS='[{"unit":"webapp","version":"2.0.0","replicas":3},{"unit":"api","version":"2.9.0","replicas":3},{"unit":"worker","version":"1.4.0","replicas":2}]'
+          fi
+          
+          # Use proper output format
+          echo "configs<<EOF" >> $GITHUB_OUTPUT
+          echo "$CONFIGS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+          
+          echo "✓ Found $(echo $CONFIGS | jq length) configurations"
+
+  analyze-changes:
+    runs-on: ubuntu-latest
+    needs: fetch-configurations
+    outputs:
+      has-changes: ${{ steps.diff.outputs.has_changes }}
+      change-summary: ${{ steps.diff.outputs.summary }}
+      change-details: ${{ steps.diff.outputs.details }}
+    
+    steps:
+      - name: Compare configurations
+        id: diff
+        run: |
+          echo "========================================"
+          echo "GITOPS CHANGE ANALYSIS"
+          echo "========================================"
+          echo "Source: ${{ github.event.inputs.source-space }}"
+          echo "Target: ${{ github.event.inputs.target-space }}"
+          echo ""
+          
+          SOURCE='${{ needs.fetch-configurations.outputs.source-configs }}'
+          TARGET='${{ needs.fetch-configurations.outputs.target-configs }}'
+          
+          echo "Changes to be synchronized:"
+          echo ""
+          
+          # Track changes
+          CHANGES=0
+          CHANGE_DETAILS=""
+          
+          # Compare each unit
+          for unit in webapp api worker; do
+            SOURCE_VER=$(echo "$SOURCE" | jq -r ".[] | select(.unit==\"$unit\") | .version")
+            TARGET_VER=$(echo "$TARGET" | jq -r ".[] | select(.unit==\"$unit\") | .version")
+            SOURCE_REP=$(echo "$SOURCE" | jq -r ".[] | select(.unit==\"$unit\") | .replicas")
+            TARGET_REP=$(echo "$TARGET" | jq -r ".[] | select(.unit==\"$unit\") | .replicas")
+            
+            if [ "$SOURCE_VER" != "$TARGET_VER" ] || [ "$SOURCE_REP" != "$TARGET_REP" ]; then
+              echo "📦 $unit:"
+              CHANGE_DETAILS="${CHANGE_DETAILS}${unit}:"
+              
+              if [ "$SOURCE_VER" != "$TARGET_VER" ]; then
+                echo "   Version: $TARGET_VER → $SOURCE_VER"
+                CHANGE_DETAILS="${CHANGE_DETAILS} version=${SOURCE_VER}"
+              fi
+              
+              if [ "$SOURCE_REP" != "$TARGET_REP" ]; then
+                echo "   Replicas: $TARGET_REP → $SOURCE_REP"
+                CHANGE_DETAILS="${CHANGE_DETAILS} replicas=${SOURCE_REP}"
+              fi
+              
+              CHANGE_DETAILS="${CHANGE_DETAILS}; "
+              CHANGES=$((CHANGES + 1))
+            fi
+          done
+          
+          if [ $CHANGES -eq 0 ]; then
+            echo "✓ No changes detected - spaces are in sync"
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "summary=No changes" >> $GITHUB_OUTPUT
+          else
+            echo ""
+            echo "Total changes: $CHANGES"
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "summary=$CHANGES units will be updated" >> $GITHUB_OUTPUT
+            
+            # Use proper output format for details
+            echo "details<<EOF" >> $GITHUB_OUTPUT
+            echo "$CHANGE_DETAILS" >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+
+  validate-changes:
+    runs-on: ubuntu-latest
+    needs: analyze-changes
+    if: needs.analyze-changes.outputs.has-changes == 'true'
+    
+    steps:
+      - name: Validate proposed changes
+        run: |
+          echo "Validating proposed GitOps changes..."
+          echo ""
+          
+          # Simulate validation checks
+          echo "Running validation checks:"
+          echo "✓ Schema validation passed"
+          echo "✓ Resource limits checked"
+          echo "✓ Dependency compatibility verified"
+          echo "✓ Security policies satisfied"
+          
+          # Check for risky changes
+          if [ "${{ github.event.inputs.target-space }}" = "production" ]; then
+            echo ""
+            echo "⚠️  Production deployment checks:"
+            echo "✓ Backup strategy confirmed"
+            echo "✓ Rollback plan available"
+            echo "✓ Maintenance window compatible"
+            echo "✓ SLA requirements met"
+          fi
+
+  generate-plan:
+    runs-on: ubuntu-latest
+    needs: [fetch-configurations, analyze-changes, validate-changes]
+    if: needs.analyze-changes.outputs.has-changes == 'true'
+    
+    steps:
+      - name: Generate deployment plan
+        run: |
+          echo "========================================"
+          echo "GITOPS DEPLOYMENT PLAN"
+          echo "========================================"
+          echo ""
+          echo "This plan will synchronize:"
+          echo "${{ github.event.inputs.source-space }} → ${{ github.event.inputs.target-space }}"
+          echo ""
+          echo "Changes summary: ${{ needs.analyze-changes.outputs.change-summary }}"
+          echo ""
+          echo "Execution Order:"
+          echo "1. Pre-deployment health checks"
+          echo "2. Create configuration backups"
+          echo "3. Apply configuration changes:"
+          
+          SOURCE='${{ needs.fetch-configurations.outputs.source-configs }}'
+          
+          # Show deployment order
+          echo "$SOURCE" | jq -r '.[] | "   - \(.unit): v\(.version) (\(.replicas) replicas)"'
+          
+          echo "4. Rolling deployment with health checks"
+          echo "5. Post-deployment validation"
+          echo "6. Update GitOps state tracking"
+          echo ""
+          echo "Estimated Duration: 15-20 minutes"
+          echo "Rollback Strategy: Automated on failure"
+          
+          # Save plan to file
+          mkdir -p /tmp/gitops
+          cat > /tmp/gitops/deployment-plan.txt << EOF
+          GitOps Deployment Plan
+          Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
+          
+          Source: ${{ github.event.inputs.source-space }}
+          Target: ${{ github.event.inputs.target-space }}
+          
+          Changes:
+          ${{ needs.analyze-changes.outputs.change-details }}
+          
+          Dry Run: ${{ github.event.inputs.dry-run }}
+          EOF
+          
+          echo ""
+          echo "✓ Deployment plan generated"
+
+  apply-changes:
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, generate-plan]
+    if: |
+      needs.analyze-changes.outputs.has-changes == 'true' &&
+      github.event.inputs.dry-run != 'true'
+    
+    steps:
+      - name: Apply GitOps changes
+        run: |
+          echo "========================================"
+          echo "APPLYING GITOPS CHANGES"
+          echo "========================================"
+          echo ""
+          echo "🚀 Starting GitOps synchronization..."
+          echo ""
+          
+          # Simulate applying changes
+          for unit in webapp api worker; do
+            echo "Updating $unit..."
+            echo "  - Fetching configuration from source"
+            echo "  - Validating configuration"
+            echo "  - Applying to target space"
+            echo "  - Waiting for rollout..."
+            sleep 2
+            echo "  ✓ $unit updated successfully"
+            echo ""
+          done
+          
+          echo "✓ All changes applied successfully!"
+          echo ""
+          echo "Post-deployment tasks:"
+          echo "✓ Metrics dashboards updated"
+          echo "✓ Alerts reconfigured"
+          echo "✓ Audit trail recorded"
+
+  preview-only:
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, generate-plan]
+    if: github.event.inputs.dry-run == 'true'
+    
+    steps:
+      - name: Show preview summary
+        run: |
+          echo "========================================"
+          echo "GITOPS PREVIEW MODE"
+          echo "========================================"
+          echo ""
+          echo "This is a DRY RUN - no changes will be made"
+          echo ""
+          echo "Summary of changes that would be applied:"
+          echo "- Source: ${{ github.event.inputs.source-space }}"
+          echo "- Target: ${{ github.event.inputs.target-space }}"
+          echo "- Changes: ${{ needs.analyze-changes.outputs.change-summary }}"
+          echo ""
+          
+          if [ -f /tmp/gitops/deployment-plan.txt ]; then
+            echo "Deployment plan details:"
+            cat /tmp/gitops/deployment-plan.txt
+          fi
+          
+          echo ""
+          echo "To apply these changes, run again with dry-run=false"
+
+  record-state:
+    runs-on: ubuntu-latest
+    needs: [apply-changes]
+    if: always() && needs.apply-changes.result == 'success'
+    
+    steps:
+      - name: Update GitOps state
+        run: |
+          echo "Recording GitOps state..."
+          
+          # Create state record
+          mkdir -p /tmp/gitops
+          cat > /tmp/gitops/state.json << EOF
+          {
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "sync": {
+              "from": "${{ github.event.inputs.source-space }}",
+              "to": "${{ github.event.inputs.target-space }}"
+            },
+            "workflow_run": "${GITHUB_RUN_ID:-local}",
+            "triggered_by": "${GITHUB_ACTOR:-system}",
+            "changes_applied": true,
+            "state": "synchronized",
+            "next_sync": "$(date -u -d '+1 hour' +%Y-%m-%dT%H:%M:%SZ 2>/dev/null || date -u)"
+          }
+          EOF
+          
+          echo "GitOps state recorded:"
+          cat /tmp/gitops/state.json | jq . || cat /tmp/gitops/state.json
+          echo ""
+          echo "✓ State tracking updated"
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [analyze-changes, validate-changes, preview-only, apply-changes, record-state]
+    if: always()
+    
+    steps:
+      - name: Display operation summary
+        run: |
+          echo "========================================"
+          echo "GITOPS OPERATION COMPLETE"
+          echo "========================================"
+          echo ""
+          echo "Operation: GitOps synchronization"
+          echo "Source: ${{ github.event.inputs.source-space }}"
+          echo "Target: ${{ github.event.inputs.target-space }}"
+          echo "Mode: ${{ github.event.inputs.dry-run == 'true' && 'Preview' || 'Apply' }}"
+          echo ""
+          
+          if [ "${{ needs.analyze-changes.outputs.has-changes }}" = "true" ]; then
+            echo "Result: ${{ needs.analyze-changes.outputs.change-summary }}"
+          else
+            echo "Result: No changes needed - spaces are in sync"
+          fi
+          
+          echo ""
+          echo "This improved example:"
+          echo "- Fixed output variable format issues"
+          echo "- Uses proper multiline output syntax"
+          echo "- Compatible with act execution"
+          echo "- Demonstrates GitOps patterns locally"
+          echo "========================================"

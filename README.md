@@ -93,14 +93,15 @@ All example workflows in the `examples/` directory are require to include this h
 ## Quick Example
 
 ```bash
-# Run workflows with configurations from ConfigHub
-cub-actions run .github/workflows/deploy.yml --space production
+# Create a GitHub Actions workflow as a ConfigHub unit
+cub unit create --space production deploy-workflow .github/workflows/deploy.yml
 
-# Use different configurations for different environments
-cub-actions run deploy.yml --space staging --unit webapp
+# Apply the workflow in different environments
+cub unit apply --space production deploy-workflow
+cub unit apply --space staging webapp
 
 # Test with historical configurations
-cub-actions run deploy.yml --as-of "2024-01-01" --space production
+cub unit apply --space production deploy-workflow --restore 1
 ```
 
 ## Documentation
@@ -136,23 +137,26 @@ brew install act
 act --version
 ```
 
-### 2. Install GitHub Actions Bridge
+### 2. Install ConfigHub CLI and Bridge Worker
 
 ```bash
-# Download latest release (macOS example)
-curl -L https://github.com/confighub/actions-bridge/releases/latest/download/cub-actions-darwin-arm64 -o cub-actions
-chmod +x cub-actions
-sudo mv cub-actions /usr/local/bin/
+# Install ConfigHub CLI
+curl -fsSL https://hub.confighub.com/cub/install.sh | bash
+
+# The actions-bridge worker will be installed as part of ConfigHub
+# Verify installation
+cub --version
 ```
 
 ### 3. Verify Setup
 
 ```bash
-# Check installation
-cub-actions version
+# Login to ConfigHub
+cub auth login
 
-# Run a simple test
-cub-actions run examples/hello-world.yml
+# Create and run a test workflow
+cub unit create --space default hello-world examples/hello-world.yml
+cub unit apply --space default hello-world
 ```
 
 ### 4. Run Your First Workflow
@@ -173,8 +177,9 @@ jobs:
       - run: echo "Hello from local GitHub Actions!"
 EOF
 
-# Run it
-cub-actions run test.yml
+# Create a ConfigHub unit and run it
+cub unit create --space default my-test test.yml
+cub unit apply --space default my-test
 ```
 
 ## Real-World Examples
@@ -187,25 +192,34 @@ DATABASE_URL=postgresql://user:pass@localhost/db
 API_KEY=sk_live_xxxxx
 EOF
 
-# Run workflow with real secrets
-cub-actions run deploy.yml --secrets-file secrets.env
+# Create unit with secrets configuration
+cub unit create --space production deploy deploy.yml
+# Secrets are managed through ConfigHub, not local files
+cub unit apply --space production deploy
 ```
 
 ### Test Different Configurations
 ```bash
 # Test how your workflow behaves in different environments
-cub-actions run deploy.yml --space development
-cub-actions run deploy.yml --space staging  
-cub-actions run deploy.yml --space production --dry-run
+cub unit create --space development deploy deploy.yml
+cub unit create --space staging deploy deploy.yml
+cub unit create --space production deploy deploy.yml
+
+# Apply in different environments
+cub unit apply --space development deploy
+cub unit apply --space staging deploy
+# Preview without applying
+cub unit get --space production deploy --extended
 ```
 
 ### Debug Failed Workflows
 ```bash
 # See exactly what's happening
-cub-actions run problematic-workflow.yml -v
+cub unit create --space debug problematic problematic-workflow.yml --verbose
+cub unit apply --space debug problematic --debug
 
-# Check if workflow will work locally
-cub-actions validate workflow.yml
+# Check workflow status and logs
+cub unit-event list --space debug --where "UnitSlug = 'problematic'"
 ```
 
 ## How It Works
@@ -237,7 +251,8 @@ See platform-specific downloads on the [releases page](https://github.com/config
 git clone https://github.com/confighub/actions-bridge
 cd actions-bridge
 make build
-./bin/cub-actions version
+# The bridge will be built as a ConfigHub worker
+./bin/actions-bridge --version
 ```
 
 ### Run with Docker
@@ -248,20 +263,22 @@ docker run -v $(pwd):/workspace confighub/actions-bridge run workflow.yml
 
 ## CLI Reference
 
+The GitHub Actions Bridge uses standard ConfigHub CLI commands:
+
 ### Core Commands
 
 ```bash
-# Run a workflow
-cub-actions run [workflow-file] [flags]
+# Create a workflow unit
+cub unit create --space [space] [unit-name] [workflow-file]
 
-# Validate without running  
-cub-actions validate [workflow-file]
+# Apply (run) a workflow  
+cub unit apply --space [space] [unit-name]
 
 # Compare workflow versions
-cub-actions diff [workflow1] [workflow2]
+cub revision list --space [space] --where "UnitSlug = '[unit-name]'"
 
-# List known limitations
-cub-actions list-limitations
+# View workflow details
+cub unit get --space [space] [unit-name] --extended
 ```
 
 ### Key Flags
@@ -293,7 +310,7 @@ Some GitHub Actions features don't work in local execution:
 - Pull request creation - Not supported locally
 - Cross-workflow artifacts - Local only
 
-Run `cub-actions list-limitations` for the full list.
+See the [act documentation](https://github.com/nektos/act#known-issues) for the full list of limitations.
 
 ## Getting Help
 

@@ -77,7 +77,7 @@ jobs:
           echo "📦 Fetching ConfigHub state for Claude's operation..."
           
           # Simulate ConfigHub API call
-          # In real implementation: cub-actions fetch-config --space production --unit webapp
+          # In real implementation: cub unit get --space production webapp --extended
           
           cat > current-config.json << 'EOF'
           {
@@ -187,7 +187,7 @@ jobs:
           NEW_CONFIG='${{ needs.claude-decision-making.outputs.new-config }}'
           
           # Simulate ConfigHub update
-          # In real implementation: cub-actions update-config --space production --unit webapp --config "$NEW_CONFIG"
+          # In real implementation: cub unit set --space production webapp --value "$NEW_CONFIG"
           
           echo "Updating ConfigHub:"
           echo "$NEW_CONFIG" | jq .
@@ -227,7 +227,7 @@ jobs:
             echo "🚀 Executing scaling operation..."
             
             # Simulate running deployment workflow
-            # In real implementation: cub-actions run deploy.yml --space production
+            # In real implementation: cub unit apply --space production webapp
             
             echo "- Updating deployment configuration"
             echo "- Rolling out new replicas"

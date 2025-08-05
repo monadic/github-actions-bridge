@@ -188,7 +188,7 @@ jobs:
           cat decision-record.json | jq .
           
           # Simulate ConfigHub update
-          # In real implementation: cub-actions record-decision --space $STAGE --decision decision-record.json
+          # In real implementation: cub unit set --space $STAGE deployment-decision --value "$(cat decision-record.json)"
           
           echo "✅ Decision recorded in ConfigHub for audit trail"
 

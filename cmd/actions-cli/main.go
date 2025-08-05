@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"log"
@@ -24,11 +25,11 @@ var (
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "cub-actions",
-		Short: "CLI for GitHub Actions Bridge",
-		Long: `A command-line interface for running GitHub Actions workflows locally 
-using the ConfigHub Actions Bridge. This tool allows you to test and debug 
-workflows without pushing to GitHub.`,
+		Use:   "cub-worker-actions",
+		Short: "Worker for GitHub Actions Bridge",
+		Long: `A ConfigHub worker that runs GitHub Actions workflows locally 
+using the Actions Bridge. This worker integrates with ConfigHub to execute 
+workflows based on configuration units.`,
 		Version: Version,
 	}
 
@@ -87,6 +88,9 @@ before deploying them.`,
 			if err != nil {
 				return fmt.Errorf("read workflow: %w", err)
 			}
+
+			// Strip ConfigHub metadata if present
+			workflowData = stripConfigHubMetadata(workflowData)
 
 			// Create temporary workspace
 			tempDir, err := os.MkdirTemp("", "actions-cli-*")
@@ -366,8 +370,8 @@ func versionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("cub-actions version %s\n", Version)
-			fmt.Println("GitHub Actions Bridge CLI")
+			fmt.Printf("cub-worker-actions version %s\n", Version)
+			fmt.Println("GitHub Actions Bridge Worker")
 			fmt.Println("https://github.com/confighub/actions-bridge")
 		},
 	}
@@ -437,4 +441,20 @@ func copyArtifacts(srcDir, dstDir string) error {
 		_, err = io.Copy(dstFile, src)
 		return err
 	})
+}
+
+// stripConfigHubMetadata removes the first 4 lines if they contain ConfigHub metadata
+func stripConfigHubMetadata(data []byte) []byte {
+	lines := bytes.Split(data, []byte("\n"))
+	
+	// Check if the first line contains apiVersion: actions.confighub.com
+	if len(lines) > 0 && bytes.Contains(lines[0], []byte("apiVersion:")) && bytes.Contains(lines[0], []byte("actions.confighub.com")) {
+		// If we have more than 4 lines, skip the first 4
+		if len(lines) > 4 {
+			return bytes.Join(lines[4:], []byte("\n"))
+		}
+	}
+	
+	// Otherwise, return the original data
+	return data
 }
