@@ -59,3 +59,4 @@ workspaces/
 # Act artifacts
 .act/
 artifacts/
+actions-bridge-workspace/
