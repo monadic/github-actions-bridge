@@ -130,8 +130,8 @@ before deploying them.`,
 			}
 			
 			// Write workflow to workspace
-			workflowName := filepath.Base(workflowPath)
-			if err := ws.WriteWorkflow(workflowName, workflowData); err != nil {
+			// Act expects the workflow to be named "workflow.yml"
+			if err := ws.WriteWorkflow("workflow.yml", workflowData); err != nil {
 				return fmt.Errorf("write workflow: %w", err)
 			}
 			
@@ -182,8 +182,9 @@ before deploying them.`,
 				DryRun: dryRun,
 			}
 			
-			// Create runner
-			runner := bridge.NewActRunner(platform, "")
+			// Create runner with default container image
+			containerImage := "catthehacker/ubuntu:act-latest"
+			runner := bridge.NewActRunner(platform, containerImage)
 			
 			// Execute workflow
 			fmt.Printf("Running workflow: %s\n", workflowPath)

@@ -40,20 +40,37 @@ Before you start, you'll need:
    - Mac: Download from [docker.com](https://www.docker.com/products/docker-desktop)
    - Linux: Install Docker Engine
    - Windows: Use WSL2 with Docker Desktop
+   - Verify: `docker --version`
 
-2. **Go 1.21+** (only if building from source)
+2. **act** - The GitHub Actions local runner (REQUIRED)
+   - Mac: `brew install act`
+   - Linux: `curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
+   - Windows: `choco install act-cli`
+   - Verify: `act --version`
+   - More info: [nektos/act](https://github.com/nektos/act)
+
+3. **Go 1.21+** (only if building from source)
    - Check with: `go version`
 
-3. **Basic command line knowledge**
+4. **Basic command line knowledge**
    - How to open a terminal
    - How to navigate directories (`cd`)
    - How to run commands
+
+**Important:** The GitHub Actions Bridge uses `act` to run workflows locally. Without act installed, the bridge cannot execute any workflows.
 
 ## Installation
 
 ### Option 1: Download Pre-built Binaries (Easiest)
 
 ```bash
+# First, install act (if not already installed)
+brew install act  # macOS
+# or for Linux: curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash
+
+# Verify act is installed
+act --version
+
 # Download the latest release (example for Mac)
 curl -L https://github.com/confighub/actions-bridge/releases/latest/download/cub-actions-darwin-arm64 -o cub-actions
 chmod +x cub-actions
@@ -317,6 +334,29 @@ cub-actions list-limitations
 ```
 
 ## Troubleshooting
+
+### "act not found" or workflow execution fails
+
+**Problem**:
+```
+Error: execution failed: create workflow planner: stat .../workflow.yml: no such file or directory
+```
+or
+```
+act: command not found
+```
+
+**Solution**:
+1. Install act:
+   ```bash
+   brew install act  # macOS
+   # or see other installation methods above
+   ```
+2. Verify installation:
+   ```bash
+   act --version
+   ```
+3. Try running your workflow again
 
 ### "Docker daemon not running"
 

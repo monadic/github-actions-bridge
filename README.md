@@ -35,9 +35,34 @@ cub-actions run deploy.yml --as-of "2024-01-01" --space production
 🎯 **[Examples](examples/)** - 15+ real-world workflow examples with explanations  
 🔧 **[API Reference](#cli-reference)** - Detailed command documentation
 
+## Prerequisites
+
+Before using GitHub Actions Bridge, you need to install these dependencies:
+
+1. **Docker** - Required for running containers
+   - Mac: [Docker Desktop](https://www.docker.com/products/docker-desktop)
+   - Linux: Docker Engine
+   - Verify: `docker --version`
+
+2. **act** - The GitHub Actions local runner
+   - Mac: `brew install act`
+   - Linux: `curl https://raw.githubusercontent.com/nektos/act/master/install.sh | sudo bash`
+   - Windows: `choco install act-cli`
+   - Verify: `act --version`
+
 ## Quick Start
 
-### 1. Install
+### 1. Install Dependencies
+
+```bash
+# Install act (macOS example)
+brew install act
+
+# Verify act is installed
+act --version
+```
+
+### 2. Install GitHub Actions Bridge
 
 ```bash
 # Download latest release (macOS example)
@@ -46,7 +71,7 @@ chmod +x cub-actions
 sudo mv cub-actions /usr/local/bin/
 ```
 
-### 2. Verify Setup
+### 3. Verify Setup
 
 ```bash
 # Check installation
@@ -56,7 +81,7 @@ cub-actions version
 cub-actions run examples/hello-world.yml
 ```
 
-### 3. Run Your First Workflow
+### 4. Run Your First Workflow
 
 ```bash
 # Create a test workflow
