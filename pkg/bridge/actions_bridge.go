@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/confighub/sdk/bridge-worker/api"
+	"github.com/confighub/sdk/workerapi"
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
 )
@@ -54,8 +55,8 @@ func (b *ActionsBridge) Info(opts api.InfoOptions) api.BridgeWorkerInfo {
 	return api.BridgeWorkerInfo{
 		SupportedConfigTypes: []*api.ConfigType{
 			{
-				ToolchainType: "github-actions",
-				ProviderType:  "act-local",
+				ToolchainType:    workerapi.ToolchainKubernetesYAML,
+				ProviderType:     "ActLocal",
 				AvailableTargets: []api.Target{
 					{
 						Name: "docker-desktop",
