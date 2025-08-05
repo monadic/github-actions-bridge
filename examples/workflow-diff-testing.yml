@@ -1,0 +1,275 @@
+name: Workflow Diff Testing
+on:
+  workflow_dispatch:
+    inputs:
+      workflow-version:
+        description: 'Workflow version to compare'
+        required: true
+        type: choice
+        options:
+          - current
+          - proposed
+          - v1-legacy
+      space:
+        description: 'Space to test against'
+        required: true
+        type: choice
+        options:
+          - development
+          - staging
+          - production
+
+jobs:
+  analyze-workflow-differences:
+    runs-on: ubuntu-latest
+    outputs:
+      has-breaking-changes: ${{ steps.diff.outputs.breaking }}
+      
+    steps:
+      - name: Analyze workflow versions
+        id: diff
+        run: |
+          echo "========================================"
+          echo "WORKFLOW DIFF ANALYSIS"
+          echo "========================================"
+          echo "Comparing: current vs ${{ github.event.inputs.workflow-version }}"
+          echo "Test space: ${{ github.event.inputs.space }}"
+          echo ""
+          
+          # Simulate workflow differences
+          VERSION="${{ github.event.inputs.workflow-version }}"
+          BREAKING="false"
+          
+          echo "Detected differences:"
+          echo ""
+          
+          if [ "$VERSION" = "proposed" ]; then
+            echo "1. Deployment Strategy:"
+            echo "   Current: Single-region deployment"
+            echo "   Proposed: Multi-region deployment (3 regions)"
+            echo "   Impact: +4 minutes deployment time"
+            echo ""
+            echo "2. Approval Requirements:"
+            echo "   Current: 1 approval needed"
+            echo "   Proposed: 2 approvals needed"
+            echo "   Impact: Increased safety, longer wait time"
+            echo ""
+            echo "3. New Steps Added:"
+            echo "   - Canary deployment phase"
+            echo "   - Automated rollback on failure"
+            echo "   - Performance benchmarking"
+            echo ""
+            echo "4. Resource Requirements:"
+            echo "   Current: 2 parallel jobs"
+            echo "   Proposed: 5 parallel jobs"
+            echo "   Impact: Faster but more expensive"
+            
+            BREAKING="false"
+          elif [ "$VERSION" = "v1-legacy" ]; then
+            echo "⚠️  WARNING: Legacy workflow detected"
+            echo ""
+            echo "1. Missing Features in Legacy:"
+            echo "   - No secret rotation support"
+            echo "   - No ConfigHub integration"
+            echo "   - Manual configuration required"
+            echo ""
+            echo "2. Security Issues:"
+            echo "   - Secrets hardcoded in workflow"
+            echo "   - No audit trail"
+            echo "   - Plain text configurations"
+            
+            BREAKING="true"
+          fi
+          
+          echo "breaking=$BREAKING" >> $GITHUB_OUTPUT
+
+  simulate-current-workflow:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Run current workflow simulation
+        run: |
+          echo "Simulating CURRENT workflow behavior..."
+          echo ""
+          echo "Step 1/5: Fetching configuration"
+          echo "✓ Config fetched from ConfigHub"
+          sleep 1
+          
+          echo "Step 2/5: Building application"
+          echo "✓ Build completed (2m 30s)"
+          sleep 1
+          
+          echo "Step 3/5: Running tests"
+          echo "✓ All tests passed (1m 45s)"
+          sleep 1
+          
+          echo "Step 4/5: Deploying to single region"
+          echo "✓ Deployed to us-east-1 (3m 00s)"
+          sleep 1
+          
+          echo "Step 5/5: Health checks"
+          echo "✓ Application healthy"
+          echo ""
+          echo "Total time: 7m 15s"
+          echo "Cost estimate: $0.25"
+
+  simulate-proposed-workflow:
+    runs-on: ubuntu-latest
+    if: github.event.inputs.workflow-version == 'proposed'
+    
+    steps:
+      - name: Run proposed workflow simulation
+        run: |
+          echo "Simulating PROPOSED workflow behavior..."
+          echo ""
+          echo "Step 1/8: Fetching configuration"
+          echo "✓ Config fetched from ConfigHub"
+          sleep 1
+          
+          echo "Step 2/8: Building application"
+          echo "✓ Build completed (2m 30s)"
+          sleep 1
+          
+          echo "Step 3/8: Running expanded test suite"
+          echo "✓ Unit tests passed"
+          echo "✓ Integration tests passed"
+          echo "✓ Performance tests passed"
+          echo "Total test time: (3m 15s)"
+          sleep 1
+          
+          echo "Step 4/8: Canary deployment (10%)"
+          echo "✓ Canary healthy in all regions (2m 00s)"
+          sleep 1
+          
+          echo "Step 5/8: Progressive rollout (50%)"
+          echo "✓ Rollout successful (2m 00s)"
+          sleep 1
+          
+          echo "Step 6/8: Full deployment (100%)"
+          echo "✓ Deployed to us-east-1"
+          echo "✓ Deployed to eu-west-1"
+          echo "✓ Deployed to ap-southeast-1"
+          echo "Multi-region deployment time: (4m 00s)"
+          sleep 1
+          
+          echo "Step 7/8: Performance benchmarking"
+          echo "✓ Latency: p99 < 100ms"
+          echo "✓ Throughput: 10K RPS achieved"
+          sleep 1
+          
+          echo "Step 8/8: Finalization"
+          echo "✓ Metrics dashboards updated"
+          echo "✓ Alerts configured"
+          echo ""
+          echo "Total time: 11m 45s"
+          echo "Cost estimate: $0.85"
+
+  compare-results:
+    runs-on: ubuntu-latest
+    needs: [analyze-workflow-differences, simulate-current-workflow]
+    
+    steps:
+      - name: Generate comparison report
+        run: |
+          echo "========================================"
+          echo "WORKFLOW COMPARISON REPORT"
+          echo "========================================"
+          echo ""
+          echo "Executive Summary:"
+          echo "-----------------"
+          
+          VERSION="${{ github.event.inputs.workflow-version }}"
+          
+          if [ "$VERSION" = "proposed" ]; then
+            echo "The proposed workflow offers:"
+            echo "✓ Better reliability (multi-region deployment)"
+            echo "✓ Safer rollout (canary deployment)"
+            echo "✓ Automated rollback capabilities"
+            echo "✗ Longer deployment time (+4m 30s)"
+            echo "✗ Higher cost (+$0.60 per deployment)"
+            echo ""
+            echo "Recommendation: APPROVE for production use"
+            echo "The added safety features justify the increased time/cost"
+          elif [ "$VERSION" = "v1-legacy" ]; then
+            echo "⚠️  CRITICAL: Do not use legacy workflow!"
+            echo "✗ No ConfigHub integration"
+            echo "✗ Security vulnerabilities"
+            echo "✗ Manual configuration required"
+            echo "✗ No audit trail"
+            echo ""
+            echo "Recommendation: BLOCK this workflow"
+            echo "Migrate to current version immediately"
+          else
+            echo "Current workflow is stable and efficient"
+            echo "Consider proposed version for critical deployments"
+          fi
+
+  security-scan:
+    runs-on: ubuntu-latest
+    needs: analyze-workflow-differences
+    
+    steps:
+      - name: Scan for security issues
+        run: |
+          echo "Scanning workflow for security issues..."
+          VERSION="${{ github.event.inputs.workflow-version }}"
+          
+          echo ""
+          if [ "$VERSION" = "v1-legacy" ]; then
+            echo "🚨 SECURITY VULNERABILITIES FOUND:"
+            echo ""
+            echo "1. Hardcoded secrets detected:"
+            echo "   Line 23: env.DATABASE_URL = 'postgresql://...'"
+            echo "   Line 45: env.API_KEY = 'sk-...'"
+            echo ""
+            echo "2. No secret rotation support"
+            echo "3. Credentials logged in plain text"
+            echo "4. No encryption for sensitive data"
+            echo ""
+            echo "Risk Level: CRITICAL"
+          else
+            echo "✓ No hardcoded secrets found"
+            echo "✓ ConfigHub integration for secret management"
+            echo "✓ Audit logging enabled"
+            echo "✓ Encrypted data transmission"
+            echo ""
+            echo "Risk Level: LOW"
+          fi
+
+  recommendation:
+    runs-on: ubuntu-latest
+    needs: [analyze-workflow-differences, compare-results, security-scan]
+    if: always()
+    
+    steps:
+      - name: Generate final recommendation
+        run: |
+          echo "========================================"
+          echo "FINAL RECOMMENDATION"
+          echo "========================================"
+          VERSION="${{ github.event.inputs.workflow-version }}"
+          SPACE="${{ github.event.inputs.space }}"
+          BREAKING="${{ needs.analyze-workflow-differences.outputs.has-breaking-changes }}"
+          
+          if [ "$BREAKING" = "true" ]; then
+            echo "❌ DO NOT DEPLOY"
+            echo ""
+            echo "This workflow version has breaking changes"
+            echo "that are incompatible with $SPACE environment"
+          elif [ "$VERSION" = "proposed" ]; then
+            echo "✅ SAFE TO DEPLOY"
+            echo ""
+            echo "Proposed workflow can be safely deployed to $SPACE"
+            echo "Benefits outweigh the increased complexity"
+            echo ""
+            echo "Next steps:"
+            echo "1. Get approval from 2 team members"
+            echo "2. Deploy to staging first"
+            echo "3. Monitor for 24 hours"
+            echo "4. Deploy to production"
+          else
+            echo "✅ CONTINUE WITH CURRENT"
+            echo ""
+            echo "Current workflow is appropriate for $SPACE"
+            echo "No immediate changes needed"
+          fi 

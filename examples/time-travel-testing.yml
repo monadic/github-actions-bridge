@@ -1,0 +1,167 @@
+name: Time Travel Testing
+on:
+  workflow_dispatch:
+    inputs:
+      as-of-date:
+        description: 'Test deployment as it would have run on this date'
+        required: true
+        default: '2024-01-01'
+      space:
+        description: 'Target space'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  fetch-historical-config:
+    runs-on: ubuntu-latest
+    outputs:
+      config: ${{ steps.historical.outputs.config }}
+      
+    steps:
+      - name: Fetch historical configuration
+        id: historical
+        run: |
+          echo "========================================="
+          echo "TIME TRAVEL: Testing as of ${{ github.event.inputs.as-of-date }}"
+          echo "========================================="
+          
+          # Simulate fetching historical config from ConfigHub
+          AS_OF="${{ github.event.inputs.as-of-date }}"
+          SPACE="${{ github.event.inputs.space }}"
+          
+          echo "Fetching configuration as it existed on ${AS_OF}..."
+          
+          # Simulate different configs based on date
+          if [[ "$AS_OF" < "2024-01-15" ]]; then
+            echo "config={\"version\":\"1.0.0\",\"replicas\":3,\"features\":{\"newUI\":false}}" >> $GITHUB_OUTPUT
+            echo "Found config revision: 122 (before UI update)"
+          else
+            echo "config={\"version\":\"2.0.0\",\"replicas\":5,\"features\":{\"newUI\":true}}" >> $GITHUB_OUTPUT
+            echo "Found config revision: 130 (after UI update)"
+          fi
+          
+          echo ""
+          echo "Historical configuration retrieved:"
+          echo "- Version at that time: $(echo '${{ steps.historical.outputs.config }}' | jq -r .version)"
+          echo "- Replicas configured: $(echo '${{ steps.historical.outputs.config }}' | jq -r .replicas)"
+          echo "- Features enabled: $(echo '${{ steps.historical.outputs.config }}' | jq -r .features)"
+
+  compare-with-current:
+    runs-on: ubuntu-latest
+    needs: fetch-historical-config
+    
+    steps:
+      - name: Compare historical vs current
+        run: |
+          echo "Comparing historical config with current..."
+          
+          # Simulate current config
+          CURRENT_CONFIG='{"version":"2.1.0","replicas":8,"features":{"newUI":true,"darkMode":true}}'
+          HISTORICAL_CONFIG='${{ needs.fetch-historical-config.outputs.config }}'
+          
+          echo "Historical (as of ${{ github.event.inputs.as-of-date }}):"
+          echo "$HISTORICAL_CONFIG" | jq .
+          
+          echo ""
+          echo "Current:"
+          echo "$CURRENT_CONFIG" | jq .
+          
+          echo ""
+          echo "Differences detected:"
+          echo "- Version: $(echo $HISTORICAL_CONFIG | jq -r .version) → $(echo $CURRENT_CONFIG | jq -r .version)"
+          echo "- Replicas: $(echo $HISTORICAL_CONFIG | jq -r .replicas) → $(echo $CURRENT_CONFIG | jq -r .replicas)"
+          echo "- New features added: darkMode"
+
+  simulate-historical-deployment:
+    runs-on: ubuntu-latest
+    needs: fetch-historical-config
+    
+    steps:
+      - name: Simulate deployment with historical config
+        run: |
+          CONFIG='${{ needs.fetch-historical-config.outputs.config }}'
+          VERSION=$(echo "$CONFIG" | jq -r .version)
+          REPLICAS=$(echo "$CONFIG" | jq -r .replicas)
+          NEW_UI=$(echo "$CONFIG" | jq -r .features.newUI)
+          
+          echo "Simulating deployment as it would have happened on ${{ github.event.inputs.as-of-date }}..."
+          echo ""
+          echo "Deployment parameters:"
+          echo "- Image version: myapp:${VERSION}"
+          echo "- Replica count: ${REPLICAS}"
+          echo "- UI Feature flag: ${NEW_UI}"
+          
+          # Simulate different deployment behavior based on version
+          if [[ "$VERSION" == "1.0.0" ]]; then
+            echo ""
+            echo "⚠️  Version 1.0.0 deployment notes:"
+            echo "- No canary deployment (added in v2.0.0)"
+            echo "- Manual DB migration required"
+            echo "- Deployment time: ~10 minutes"
+          else
+            echo ""
+            echo "✓ Version 2.0.0+ deployment features:"
+            echo "- Automatic canary deployment (10% → 50% → 100%)"
+            echo "- Automated DB migrations"
+            echo "- Blue-green deployment support"
+            echo "- Deployment time: ~5 minutes"
+          fi
+          
+          echo ""
+          echo "Historical deployment simulation complete!"
+
+  analyze-historical-secrets:
+    runs-on: ubuntu-latest
+    needs: fetch-historical-config
+    
+    steps:
+      - name: Check historical secret rotation
+        run: |
+          echo "Analyzing secret rotation history..."
+          AS_OF="${{ github.event.inputs.as-of-date }}"
+          
+          # Simulate secret rotation history
+          echo "Secrets that were valid on ${AS_OF}:"
+          echo "- database_password: last rotated 2023-12-15"
+          echo "- api_key: last rotated 2023-11-01"
+          echo "- jwt_secret: last rotated 2024-01-10"
+          
+          # Check if any secrets were outdated
+          if [[ "$AS_OF" > "2024-01-10" ]]; then
+            echo ""
+            echo "✓ All secrets were up-to-date at this time"
+          else
+            echo ""
+            echo "⚠️  Warning: jwt_secret was using old version at this time"
+            echo "   It was rotated 10 days after this date"
+          fi
+
+  generate-report:
+    runs-on: ubuntu-latest
+    needs: [fetch-historical-config, compare-with-current, simulate-historical-deployment]
+    
+    steps:
+      - name: Generate time travel report
+        run: |
+          echo "========================================"
+          echo "TIME TRAVEL DEPLOYMENT REPORT"
+          echo "========================================"
+          echo "Analysis Date: ${{ github.event.inputs.as-of-date }}"
+          echo "Target Space: ${{ github.event.inputs.space }}"
+          echo ""
+          echo "Summary:"
+          echo "- Config revision at that time: 122"
+          echo "- Current revision: 145"
+          echo "- Major changes since then: 23"
+          echo ""
+          echo "Risk Assessment:"
+          echo "- Running historical workflow today: HIGH RISK"
+          echo "- Missing features: Dark mode, Auto-scaling"
+          echo "- Incompatible changes: API v2 endpoints"
+          echo ""
+          echo "Recommendation:"
+          echo "Update workflow to handle backward compatibility"
+          echo "========================================" 

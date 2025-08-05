@@ -1,0 +1,202 @@
+name: Config-Triggered Workflow
+on:
+  # In ConfigHub integration, this would be triggered by config changes
+  workflow_dispatch:
+    inputs:
+      config-event:
+        description: 'Type of config change'
+        required: true
+        type: choice
+        options:
+          - config.changed
+          - config.approved
+          - secret.rotated
+      changed-path:
+        description: 'Config path that changed (e.g., spec.replicas)'
+        required: true
+        default: 'spec.replicas'
+      old-value:
+        description: 'Previous value'
+        required: true
+        default: '3'
+      new-value:
+        description: 'New value'
+        required: true
+        default: '5'
+
+jobs:
+  analyze-change:
+    runs-on: ubuntu-latest
+    outputs:
+      risk-level: ${{ steps.assess.outputs.risk }}
+      requires-approval: ${{ steps.assess.outputs.approval }}
+    
+    steps:
+      - name: Analyze config change
+        id: assess
+        run: |
+          echo "==============================="
+          echo "CONFIG CHANGE DETECTED"
+          echo "==============================="
+          echo "Event: ${{ github.event.inputs.config-event }}"
+          echo "Path: ${{ github.event.inputs.changed-path }}"
+          echo "Change: ${{ github.event.inputs.old-value }} → ${{ github.event.inputs.new-value }}"
+          echo ""
+          
+          # Assess risk based on change
+          RISK="low"
+          APPROVAL="false"
+          
+          if [[ "${{ github.event.inputs.changed-path }}" == *"replicas"* ]]; then
+            OLD="${{ github.event.inputs.old-value }}"
+            NEW="${{ github.event.inputs.new-value }}"
+            INCREASE=$((NEW - OLD))
+            
+            if [ $INCREASE -gt 2 ]; then
+              RISK="high"
+              APPROVAL="true"
+              echo "⚠️  High Risk: Large replica increase detected"
+              echo "   Cost impact: ~$${INCREASE}00/month"
+            else
+              RISK="medium"
+              echo "✓ Medium Risk: Moderate replica change"
+            fi
+          fi
+          
+          if [[ "${{ github.event.inputs.config-event }}" == "secret.rotated" ]]; then
+            RISK="critical"
+            APPROVAL="true"
+            echo "🔐 Critical: Secret rotation requires immediate deployment"
+          fi
+          
+          echo "risk=$RISK" >> $GITHUB_OUTPUT
+          echo "approval=$APPROVAL" >> $GITHUB_OUTPUT
+          
+          echo ""
+          echo "Risk Assessment: ${RISK^^}"
+          echo "Requires Approval: $APPROVAL"
+
+  test-impact:
+    runs-on: ubuntu-latest
+    needs: analyze-change
+    
+    steps:
+      - name: Test configuration change impact
+        run: |
+          echo "Testing impact of configuration change..."
+          
+          # Simulate different tests based on what changed
+          if [[ "${{ github.event.inputs.changed-path }}" == *"replicas"* ]]; then
+            echo "Running scaling tests..."
+            echo "- Load balancer configuration: ✓ Compatible"
+            echo "- Node capacity: ✓ Sufficient"
+            echo "- Budget limits: ✓ Within bounds"
+          fi
+          
+          if [[ "${{ github.event.inputs.config-event }}" == "secret.rotated" ]]; then
+            echo "Running secret rotation tests..."
+            echo "- Database connectivity: ✓ Verified"
+            echo "- API authentication: ✓ Working"
+            echo "- Service dependencies: ✓ Updated"
+          fi
+          
+          echo ""
+          echo "✓ All impact tests passed"
+
+  auto-scale-test:
+    runs-on: ubuntu-latest
+    needs: test-impact
+    if: contains(github.event.inputs.changed-path, 'replicas')
+    
+    steps:
+      - name: Perform scale testing
+        run: |
+          OLD="${{ github.event.inputs.old-value }}"
+          NEW="${{ github.event.inputs.new-value }}"
+          
+          echo "Performing gradual scale test..."
+          echo "Current replicas: $OLD"
+          echo "Target replicas: $NEW"
+          echo ""
+          
+          # Simulate gradual scaling
+          CURRENT=$OLD
+          while [ $CURRENT -lt $NEW ]; do
+            CURRENT=$((CURRENT + 1))
+            echo "Scaling to $CURRENT replicas..."
+            sleep 1
+            echo "✓ Health check passed at $CURRENT replicas"
+          done
+          
+          echo ""
+          echo "✓ Scale test completed successfully"
+
+  deploy-if-approved:
+    runs-on: ubuntu-latest
+    needs: [analyze-change, test-impact]
+    if: github.event.inputs.config-event == 'config.approved'
+    
+    steps:
+      - name: Deploy approved configuration
+        run: |
+          echo "==============================="
+          echo "DEPLOYING APPROVED CONFIG"
+          echo "==============================="
+          echo "Configuration has been approved for deployment"
+          echo ""
+          
+          # Deployment based on risk level
+          RISK="${{ needs.analyze-change.outputs.risk-level }}"
+          
+          if [ "$RISK" = "critical" ]; then
+            echo "🚨 Critical deployment - Using fast-track process"
+            echo "- Skipping canary phase"
+            echo "- Direct rollout to all instances"
+          elif [ "$RISK" = "high" ]; then
+            echo "⚠️  High risk deployment - Using careful rollout"
+            echo "- 10% canary for 10 minutes"
+            echo "- 50% rollout for 10 minutes"
+            echo "- 100% if metrics are stable"
+          else
+            echo "✓ Standard deployment process"
+            echo "- 25% canary for 5 minutes"
+            echo "- 100% rollout"
+          fi
+          
+          echo ""
+          echo "Deployment in progress..."
+          echo "✓ Configuration applied successfully"
+
+  notify:
+    runs-on: ubuntu-latest
+    needs: [analyze-change, deploy-if-approved]
+    if: always()
+    
+    steps:
+      - name: Send notifications
+        run: |
+          echo "Sending notifications about config change..."
+          
+          cat > notification.json << EOF
+          {
+            "event": "${{ github.event.inputs.config-event }}",
+            "path": "${{ github.event.inputs.changed-path }}",
+            "change": {
+              "from": "${{ github.event.inputs.old-value }}",
+              "to": "${{ github.event.inputs.new-value }}"
+            },
+            "risk": "${{ needs.analyze-change.outputs.risk-level }}",
+            "workflow_run": "${{ github.run_id }}",
+            "triggered_by": "ConfigHub",
+            "result": "${{ needs.deploy-if-approved.result || 'not_deployed' }}"
+          }
+          EOF
+          
+          echo "Notification payload:"
+          cat notification.json | jq .
+          
+          echo ""
+          echo "✓ Notifications sent to:"
+          echo "  - Slack: #deployments"
+          echo "  - Email: ops-team@example.com"
+          echo "  - ConfigHub audit log" 
