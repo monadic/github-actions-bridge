@@ -30,14 +30,14 @@ type patternCheck struct {
 func NewCompatibilityChecker() *CompatibilityChecker {
 	return &CompatibilityChecker{
 		unsupportedActions: map[string]string{
-			"actions/cache@":              "Caching not supported locally",
-			"actions/upload-artifact@":    "Artifacts saved to workspace only",
-			"actions/download-artifact@":  "Cross-workflow artifacts not supported",
-			"docker/build-push-action@":   "Registry push disabled locally",
-			"actions/create-release@":     "GitHub releases not supported locally",
-			"actions/upload-release-asset@": "Release assets not supported locally",
+			"actions/cache@":                   "Caching not supported locally",
+			"actions/upload-artifact@":         "Artifacts saved to workspace only",
+			"actions/download-artifact@":       "Cross-workflow artifacts not supported",
+			"docker/build-push-action@":        "Registry push disabled locally",
+			"actions/create-release@":          "GitHub releases not supported locally",
+			"actions/upload-release-asset@":    "Release assets not supported locally",
 			"peter-evans/create-pull-request@": "Pull requests not supported locally",
-			"github/super-linter@":        "May timeout locally due to resource constraints",
+			"github/super-linter@":             "May timeout locally due to resource constraints",
 		},
 		warningPatterns: []patternCheck{
 			{
@@ -84,7 +84,7 @@ func (cc *CompatibilityChecker) CheckWorkflow(workflowData []byte) []Warning {
 	warnings := []Warning{}
 	content := string(workflowData)
 	lines := strings.Split(content, "\n")
-	
+
 	// Check for unsupported actions
 	for lineNum, line := range lines {
 		for action, message := range cc.unsupportedActions {
@@ -95,7 +95,7 @@ func (cc *CompatibilityChecker) CheckWorkflow(workflowData []byte) []Warning {
 				if len(actionMatch) > 1 {
 					actionRef = actionMatch[1]
 				}
-				
+
 				warnings = append(warnings, Warning{
 					Level:   "info",
 					Message: fmt.Sprintf("%s: %s", actionRef, message),
@@ -105,14 +105,14 @@ func (cc *CompatibilityChecker) CheckWorkflow(workflowData []byte) []Warning {
 			}
 		}
 	}
-	
+
 	// Check warning patterns
 	for _, check := range cc.warningPatterns {
 		matches := check.pattern.FindAllStringIndex(content, -1)
 		for _, match := range matches {
 			// Find line number
 			lineNum := strings.Count(content[:match[0]], "\n") + 1
-			
+
 			warnings = append(warnings, Warning{
 				Level:   check.level,
 				Message: check.message,
@@ -120,17 +120,17 @@ func (cc *CompatibilityChecker) CheckWorkflow(workflowData []byte) []Warning {
 			})
 		}
 	}
-	
+
 	// Check for common issues
 	warnings = append(warnings, cc.checkCommonIssues(content)...)
-	
+
 	return warnings
 }
 
 // checkCommonIssues checks for common workflow issues when running locally
 func (cc *CompatibilityChecker) checkCommonIssues(content string) []Warning {
 	warnings := []Warning{}
-	
+
 	// Check for hardcoded paths
 	if strings.Contains(content, "/home/runner/") {
 		warnings = append(warnings, Warning{
@@ -138,7 +138,7 @@ func (cc *CompatibilityChecker) checkCommonIssues(content string) []Warning {
 			Message: "Hardcoded runner paths may not work locally",
 		})
 	}
-	
+
 	// Check for network-dependent steps without proper handling
 	if strings.Contains(content, "curl ") || strings.Contains(content, "wget ") {
 		if !strings.Contains(content, "|| true") && !strings.Contains(content, "|| exit") {
@@ -148,7 +148,7 @@ func (cc *CompatibilityChecker) checkCommonIssues(content string) []Warning {
 			})
 		}
 	}
-	
+
 	// Check for large resource requirements
 	if regexp.MustCompile(`timeout-minutes:\s*(\d+)`).MatchString(content) {
 		matches := regexp.MustCompile(`timeout-minutes:\s*(\d+)`).FindStringSubmatch(content)
@@ -159,7 +159,7 @@ func (cc *CompatibilityChecker) checkCommonIssues(content string) []Warning {
 			})
 		}
 	}
-	
+
 	// Check for GitHub API usage
 	if strings.Contains(content, "api.github.com") {
 		warnings = append(warnings, Warning{
@@ -167,7 +167,7 @@ func (cc *CompatibilityChecker) checkCommonIssues(content string) []Warning {
 			Message: "GitHub API calls require authentication and may be rate-limited",
 		})
 	}
-	
+
 	return warnings
 }
 
@@ -187,23 +187,23 @@ func (cc *CompatibilityChecker) KnownLimitations() []string {
 		"GitHub API calls may fail",
 		"Scheduled workflows need manual trigger",
 	}
-	
+
 	return limitations
 }
 
 // IsWorkflowSupported does a quick check if a workflow can run at all
 func (cc *CompatibilityChecker) IsWorkflowSupported(workflowData []byte) (bool, string) {
 	content := string(workflowData)
-	
+
 	// Check for completely unsupported features
 	if strings.Contains(content, "container-job:") {
 		return false, "Container jobs are not fully supported"
 	}
-	
+
 	if strings.Contains(content, "concurrency:") {
 		return false, "Concurrency controls are not supported locally"
 	}
-	
+
 	// Workflows are generally supported with limitations
 	return true, ""
 }
@@ -211,11 +211,11 @@ func (cc *CompatibilityChecker) IsWorkflowSupported(workflowData []byte) (bool, 
 // SuggestFixes provides suggestions for common issues
 func (cc *CompatibilityChecker) SuggestFixes(warnings []Warning) []string {
 	suggestions := []string{}
-	
+
 	hasCache := false
 	hasArtifacts := false
 	hasDocker := false
-	
+
 	for _, w := range warnings {
 		if strings.Contains(w.Action, "actions/cache") {
 			hasCache = true
@@ -227,21 +227,21 @@ func (cc *CompatibilityChecker) SuggestFixes(warnings []Warning) []string {
 			hasDocker = true
 		}
 	}
-	
+
 	if hasCache {
-		suggestions = append(suggestions, 
+		suggestions = append(suggestions,
 			"Consider using volume mounts for caching dependencies locally")
 	}
-	
+
 	if hasArtifacts {
 		suggestions = append(suggestions,
 			"Artifacts will be saved to the workspace output directory")
 	}
-	
+
 	if hasDocker {
 		suggestions = append(suggestions,
 			"Ensure Docker daemon is running and accessible")
 	}
-	
+
 	return suggestions
 }

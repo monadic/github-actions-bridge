@@ -25,22 +25,22 @@ func New() *Detector {
 func (d *Detector) Track(name, value string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	
+
 	// Skip empty values
 	if value == "" {
 		return
 	}
-	
+
 	// Track the exact value
 	d.patterns[value] = name
-	
+
 	// Track common encodings
 	d.patterns[base64.StdEncoding.EncodeToString([]byte(value))] = name + "_base64"
 	d.patterns[base64.URLEncoding.EncodeToString([]byte(value))] = name + "_base64url"
-	
+
 	// Track hex encoding
 	d.patterns[fmt.Sprintf("%x", sha256.Sum256([]byte(value)))] = name + "_sha256"
-	
+
 	// Track URL encoded
 	d.patterns[strings.ReplaceAll(value, " ", "%20")] = name + "_urlencoded"
 	d.patterns[strings.ReplaceAll(value, " ", "+")] = name + "_urlencoded_plus"
@@ -50,12 +50,12 @@ func (d *Detector) Track(name, value string) {
 func (d *Detector) SanitizeLogs(logs []string) []string {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	sanitized := make([]string, len(logs))
 	for i, log := range logs {
 		sanitized[i] = d.sanitizeLine(log)
 	}
-	
+
 	return sanitized
 }
 
@@ -63,7 +63,7 @@ func (d *Detector) SanitizeLogs(logs []string) []string {
 func (d *Detector) SanitizeString(s string) string {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	return d.sanitizeLine(s)
 }
 
@@ -76,7 +76,7 @@ func (d *Detector) sanitizeLine(line string) string {
 			line = strings.ReplaceAll(line, pattern, replacement)
 		}
 	}
-	
+
 	return line
 }
 
@@ -84,17 +84,17 @@ func (d *Detector) sanitizeLine(line string) string {
 func (d *Detector) CheckForLeaks(text string) (bool, []string) {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	var leaks []string
 	found := false
-	
+
 	for pattern, name := range d.patterns {
 		if pattern != "" && strings.Contains(text, pattern) {
 			found = true
 			leaks = append(leaks, name)
 		}
 	}
-	
+
 	return found, leaks
 }
 
@@ -102,7 +102,7 @@ func (d *Detector) CheckForLeaks(text string) (bool, []string) {
 func (d *Detector) Clear() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	
+
 	d.patterns = make(map[string]string)
 }
 
@@ -110,7 +110,7 @@ func (d *Detector) Clear() {
 func (d *Detector) Count() int {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	return len(d.patterns)
 }
 
@@ -118,18 +118,18 @@ func (d *Detector) Count() int {
 func (d *Detector) GetTrackedNames() []string {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
-	
+
 	names := make(map[string]bool)
 	for _, name := range d.patterns {
 		// Remove encoding suffixes
 		baseName := strings.Split(name, "_")[0]
 		names[baseName] = true
 	}
-	
+
 	var result []string
 	for name := range names {
 		result = append(result, name)
 	}
-	
+
 	return result
 }

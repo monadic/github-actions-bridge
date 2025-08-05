@@ -17,7 +17,7 @@ import (
 var (
 	// Version is set at build time
 	Version = "dev"
-	
+
 	// Global flag
 	verbose bool
 )
@@ -31,10 +31,10 @@ using the ConfigHub Actions Bridge. This tool allows you to test and debug
 workflows without pushing to GitHub.`,
 		Version: Version,
 	}
-	
+
 	// Global flags
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "Enable verbose output")
-	
+
 	// Add commands
 	rootCmd.AddCommand(
 		runCommand(),
@@ -43,7 +43,7 @@ workflows without pushing to GitHub.`,
 		cleanCommand(),
 		versionCommand(),
 	)
-	
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
@@ -66,7 +66,7 @@ func runCommand() *cobra.Command {
 		watch        bool
 		timeout      int
 	)
-	
+
 	cmd := &cobra.Command{
 		Use:   "run WORKFLOW",
 		Short: "Run a GitHub Actions workflow locally",
@@ -76,41 +76,41 @@ before deploying them.`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workflowPath := args[0]
-			
+
 			// Validate workflow exists
 			if _, err := os.Stat(workflowPath); err != nil {
 				return fmt.Errorf("workflow file not found: %s", workflowPath)
 			}
-			
+
 			// Read workflow
 			workflowData, err := os.ReadFile(workflowPath)
 			if err != nil {
 				return fmt.Errorf("read workflow: %w", err)
 			}
-			
+
 			// Create temporary workspace
 			tempDir, err := os.MkdirTemp("", "actions-cli-*")
 			if err != nil {
 				return fmt.Errorf("create temp dir: %w", err)
 			}
 			defer os.RemoveAll(tempDir)
-			
+
 			// Initialize bridge components
 			workspaceManager, err := bridge.NewWorkspaceManager(tempDir)
 			if err != nil {
 				return fmt.Errorf("create workspace manager: %w", err)
 			}
-			
+
 			ws, err := workspaceManager.CreateWorkspace(uuid.New().String())
 			if err != nil {
 				return fmt.Errorf("create workspace: %w", err)
 			}
 			defer ws.SecureCleanup()
-			
+
 			// Check compatibility
 			checker := bridge.NewCompatibilityChecker()
 			warnings := checker.CheckWorkflow(workflowData)
-			
+
 			if len(warnings) > 0 {
 				fmt.Println("Compatibility warnings:")
 				for _, w := range warnings {
@@ -118,7 +118,7 @@ before deploying them.`,
 				}
 				fmt.Println()
 			}
-			
+
 			// Validation mode
 			if validateOnly {
 				supported, reason := checker.IsWorkflowSupported(workflowData)
@@ -128,13 +128,13 @@ before deploying them.`,
 				fmt.Println("✓ Workflow is valid and supported")
 				return nil
 			}
-			
+
 			// Write workflow to workspace
 			// Act expects the workflow to be named "workflow.yml"
 			if err := ws.WriteWorkflow("workflow.yml", workflowData); err != nil {
 				return fmt.Errorf("write workflow: %w", err)
 			}
-			
+
 			// Parse inputs
 			inputMap := make(map[string]interface{})
 			for _, input := range inputs {
@@ -144,7 +144,7 @@ before deploying them.`,
 				}
 				inputMap[parts[0]] = parts[1]
 			}
-			
+
 			// Load secrets if provided
 			secrets := make(map[string]string)
 			if secretsFile != "" {
@@ -153,7 +153,7 @@ before deploying them.`,
 					return fmt.Errorf("parse secrets: %w", err)
 				}
 			}
-			
+
 			// Load environment if provided
 			environment := make(map[string]string)
 			if envFile != "" {
@@ -162,7 +162,7 @@ before deploying them.`,
 					return fmt.Errorf("parse env file: %w", err)
 				}
 			}
-			
+
 			// Prepare execution context
 			execCtx := &bridge.ExecutionContext{
 				Workspace:  ws,
@@ -191,22 +191,22 @@ before deploying them.`,
 			if dryRun {
 				fmt.Println("DRY RUN - No actual execution")
 			}
-			
+
 			result, err := runner.Execute(execCtx)
 			if err != nil {
 				return fmt.Errorf("execution failed: %w", err)
 			}
-			
+
 			// Display results
 			fmt.Printf("\nExecution completed in %s\n", result.Duration)
 			fmt.Printf("Exit code: %d\n", result.ExitCode)
-			
+
 			if len(result.Artifacts) > 0 {
 				fmt.Printf("\nArtifacts:\n")
 				for _, artifact := range result.Artifacts {
 					fmt.Printf("  - %s\n", artifact)
 				}
-				
+
 				// Copy artifacts if directory specified
 				if artifactDir != "" {
 					if err := copyArtifacts(ws.OutputDir, artifactDir); err != nil {
@@ -216,7 +216,7 @@ before deploying them.`,
 					}
 				}
 			}
-			
+
 			// Show logs if verbose
 			if verbose && len(result.Logs) > 0 {
 				fmt.Printf("\nExecution logs:\n")
@@ -224,15 +224,15 @@ before deploying them.`,
 					fmt.Println(log)
 				}
 			}
-			
+
 			if result.ExitCode != 0 {
 				return fmt.Errorf("workflow failed with exit code %d", result.ExitCode)
 			}
-			
+
 			return nil
 		},
 	}
-	
+
 	// Add flags
 	cmd.Flags().StringVar(&space, "space", "", "ConfigHub space")
 	cmd.Flags().StringVar(&unit, "unit", "", "ConfigHub unit")
@@ -246,7 +246,7 @@ before deploying them.`,
 	cmd.Flags().BoolVar(&validateOnly, "validate", false, "Validate workflow without running")
 	cmd.Flags().BoolVar(&watch, "watch", false, "Watch workflow file for changes")
 	cmd.Flags().IntVar(&timeout, "timeout", 3600, "Execution timeout in seconds")
-	
+
 	return cmd
 }
 
@@ -259,36 +259,36 @@ func validateCommand() *cobra.Command {
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			workflowPath := args[0]
-			
+
 			// Read workflow
 			workflowData, err := os.ReadFile(workflowPath)
 			if err != nil {
 				return fmt.Errorf("read workflow: %w", err)
 			}
-			
+
 			// Parse as YAML to check syntax
 			var workflow map[string]interface{}
 			if err := yaml.Unmarshal(workflowData, &workflow); err != nil {
 				return fmt.Errorf("invalid YAML syntax: %w", err)
 			}
-			
+
 			// Check with compatibility checker
 			checker := bridge.NewCompatibilityChecker()
 			warnings := checker.CheckWorkflow(workflowData)
-			
+
 			supported, reason := checker.IsWorkflowSupported(workflowData)
 			if !supported {
 				return fmt.Errorf("workflow not supported: %s", reason)
 			}
-			
+
 			fmt.Printf("✓ Workflow is valid: %s\n", workflowPath)
-			
+
 			if len(warnings) > 0 {
 				fmt.Printf("\nCompatibility notes:\n")
 				for _, w := range warnings {
 					fmt.Printf("  [%s] Line %d: %s\n", w.Level, w.Line, w.Message)
 				}
-				
+
 				// Show suggestions
 				suggestions := checker.SuggestFixes(warnings)
 				if len(suggestions) > 0 {
@@ -298,7 +298,7 @@ func validateCommand() *cobra.Command {
 					}
 				}
 			}
-			
+
 			return nil
 		},
 	}
@@ -313,7 +313,7 @@ func listCommand() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			checker := bridge.NewCompatibilityChecker()
 			limitations := checker.KnownLimitations()
-			
+
 			fmt.Println("Known limitations when running GitHub Actions locally:")
 			fmt.Println()
 			for i, limitation := range limitations {
@@ -339,7 +339,7 @@ func cleanCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			
+
 			removed := 0
 			for _, match := range matches {
 				if err := os.RemoveAll(match); err != nil {
@@ -348,13 +348,13 @@ func cleanCommand() *cobra.Command {
 					removed++
 				}
 			}
-			
+
 			fmt.Printf("Cleaned up %d temporary directories\n", removed)
-			
+
 			// TODO: Add Docker cleanup
 			fmt.Println("\nTo clean Docker resources, run:")
 			fmt.Println("  docker system prune -f")
-			
+
 			return nil
 		},
 	}
@@ -377,19 +377,19 @@ func versionCommand() *cobra.Command {
 
 func parseEnvFile(path string) (map[string]string, error) {
 	env := make(map[string]string)
-	
+
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	
+
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		
+
 		parts := strings.SplitN(line, "=", 2)
 		if len(parts) == 2 {
 			key := strings.TrimSpace(parts[0])
@@ -397,7 +397,7 @@ func parseEnvFile(path string) (map[string]string, error) {
 			env[key] = value
 		}
 	}
-	
+
 	return env, nil
 }
 
@@ -405,35 +405,35 @@ func copyArtifacts(srcDir, dstDir string) error {
 	if err := os.MkdirAll(dstDir, 0755); err != nil {
 		return err
 	}
-	
+
 	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		
+
 		rel, err := filepath.Rel(srcDir, path)
 		if err != nil {
 			return err
 		}
-		
+
 		dst := filepath.Join(dstDir, rel)
-		
+
 		if info.IsDir() {
 			return os.MkdirAll(dst, info.Mode())
 		}
-		
+
 		src, err := os.Open(path)
 		if err != nil {
 			return err
 		}
 		defer src.Close()
-		
+
 		dstFile, err := os.Create(dst)
 		if err != nil {
 			return err
 		}
 		defer dstFile.Close()
-		
+
 		_, err = io.Copy(dstFile, src)
 		return err
 	})
