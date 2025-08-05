@@ -1,22 +1,35 @@
-# GitHub Actions Bridge - User Guide for Beginners
+# GitHub Actions Bridge - User Guide
 
-Welcome! This guide will help you get started with the GitHub Actions Bridge, even if you're new to GitHub Actions or ConfigHub.
+[← Back to README](README.md) | [Examples →](examples/) | [API Reference](README.md#cli-reference)
+
+---
+
+Welcome! This guide will walk you through using the GitHub Actions Bridge step by step.
 
 ## Table of Contents
-1. [What is this?](#what-is-this)
+1. [Understanding the Problem](#understanding-the-problem)
 2. [Prerequisites](#prerequisites)
 3. [Installation](#installation)
 4. [Your First Workflow](#your-first-workflow)
-5. [Common Use Cases](#common-use-cases)
-6. [Troubleshooting](#troubleshooting)
-7. [FAQ](#faq)
+5. [Working with Secrets](#working-with-secrets)
+6. [ConfigHub Integration](#confighub-integration)
+7. [Common Use Cases](#common-use-cases)
+8. [Troubleshooting](#troubleshooting)
+9. [Next Steps](#next-steps)
 
-## What is this?
+## Understanding the Problem
 
-The GitHub Actions Bridge lets you run GitHub Actions workflows on your local machine without pushing to GitHub. This is useful for:
-- Testing workflows before committing
-- Running workflows in environments without GitHub access
-- Integrating GitHub Actions with ConfigHub
+If you've used GitHub Actions, you've probably experienced:
+- ❌ Pushing code just to test if your workflow works
+- ❌ Waiting 5-10 minutes to see if your change broke CI
+- ❌ Debugging through dozens of commit messages like "fix CI attempt #23"
+- ❌ Being unable to test workflows that need production secrets
+
+The GitHub Actions Bridge solves these problems by letting you:
+- ✅ Test workflows locally before pushing
+- ✅ Use real configurations from ConfigHub
+- ✅ Debug with instant feedback
+- ✅ Test with actual secrets safely
 
 ## Prerequisites
 
@@ -113,41 +126,121 @@ cub-actions run hello.yml --dry-run
 cub-actions run hello.yml --verbose
 ```
 
-## Common Use Cases
+**Congratulations!** You've just run your first GitHub Actions workflow locally. Let's explore more features.
 
-### 1. Running with Secrets
+## Working with Secrets
 
-Many workflows need secrets (like API keys). Here's how to provide them:
+One of the biggest challenges with GitHub Actions is testing workflows that need secrets. The bridge solves this elegantly.
 
-Create a `secrets.env` file:
-```bash
-API_KEY=your-api-key-here
-DATABASE_PASSWORD=super-secret
+### The Problem with Secrets
+
+In GitHub, you'd set secrets in your repository settings:
+```yaml
+# This won't work locally without the bridge
+env:
+  API_KEY: ${{ secrets.API_KEY }}
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
 ```
 
-Create a workflow that uses secrets (`with-secrets.yml`):
+### The Solution
+
+1. **Create a secrets file** (never commit this!):
+```bash
+# secrets.env
+API_KEY=sk_live_abcd1234
+DATABASE_URL=postgresql://user:pass@localhost/mydb
+GITHUB_TOKEN=ghp_xxxxxxxxxxxx
+```
+
+2. **Use secrets in your workflow**:
 ```yaml
-name: Secret Test
+# deploy.yml
+name: Deploy Application
 on: push
 
 jobs:
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Use API Key
+      - name: Connect to Database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          echo "Connecting to database..."
+          # Your database operations here
+          
+      - name: Deploy to API
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: |
-          echo "API Key length: ${#API_KEY}"
-          # Never echo the actual secret!
+          echo "Deploying with API key (length: ${#API_KEY})"
+          # Your deployment code here
 ```
 
-Run it:
+3. **Run with secrets**:
 ```bash
-cub-actions run with-secrets.yml --secrets-file secrets.env
+cub-actions run deploy.yml --secrets-file secrets.env
 ```
 
-### 2. Running with Environment Variables
+**Security Notes:**
+- Secrets are never logged or displayed
+- Files are created with restricted permissions (0600)
+- Secrets are cleaned up after execution
+- Add `secrets.env` to `.gitignore`
+
+## ConfigHub Integration
+
+While the bridge works great standalone, its real power comes from ConfigHub integration.
+
+### What is ConfigHub?
+
+ConfigHub is a configuration management platform that:
+- Stores configurations and secrets securely
+- Manages different environments (dev, staging, production)
+- Tracks configuration history
+- Integrates with your workflows
+
+### Setting Up ConfigHub Integration
+
+1. **Get ConfigHub credentials** (from your ConfigHub admin)
+2. **Set environment variables**:
+```bash
+export CONFIGHUB_WORKER_ID=your-worker-id
+export CONFIGHUB_WORKER_SECRET=your-secret
+export CONFIGHUB_URL=https://api.confighub.com
+```
+
+3. **Run workflows with ConfigHub**:
+```bash
+# Use configurations from ConfigHub
+cub-actions run deploy.yml --space production --unit webapp
+
+# Test with different environments
+cub-actions run deploy.yml --space staging --unit webapp
+cub-actions run deploy.yml --space development --unit webapp
+```
+
+### Advanced ConfigHub Features
+
+**Time Travel Testing:**
+```bash
+# Test with last week's configuration
+cub-actions run deploy.yml --space prod --as-of "2024-01-01"
+```
+
+**Configuration-Driven Workflows:**
+```bash
+# All values come from ConfigHub
+cub-actions run examples/config-driven-deployment.yml \
+  --space production \
+  --unit webapp
+```
+
+See the [ConfigHub examples](examples/) for more advanced use cases.
+
+## Common Use Cases
+
+### 1. Running with Environment Variables
 
 Create an environment file (`dev.env`):
 ```bash
@@ -283,20 +376,7 @@ on: workflow_dispatch  # Manual trigger
 
 ## Advanced Tips
 
-### 1. Using ConfigHub Integration
-
-If you have ConfigHub access:
-
-```bash
-# Set up worker credentials
-export CONFIGHUB_WORKER_ID=your-worker-id
-export CONFIGHUB_WORKER_SECRET=your-secret
-
-# Run the bridge worker
-./bin/actions-bridge
-```
-
-### 2. Custom Docker Images
+### 1. Custom Docker Images
 
 Use specific runner images:
 ```bash
@@ -378,11 +458,47 @@ If you're stuck:
 
 ## Next Steps
 
-Now that you've got the basics:
+Now that you understand the basics, explore these resources:
 
-1. Try running your own workflows
-2. Experiment with secrets and environment variables
-3. Set up the bridge worker for ConfigHub integration
-4. Contribute improvements to the project!
+### 1. Browse the Examples
+Check out our [15+ example workflows](examples/) that demonstrate:
+- [Basic workflows](examples/hello-world.yml) - Start here
+- [Secret handling](examples/with-secrets.yml) - Secure credential management
+- [CI/CD pipelines](examples/build-test-deploy.yml) - Complete deployment flows
+- [ConfigHub integration](examples/config-driven-deployment.yml) - Advanced features
 
-Happy workflow running!
+### 2. Try Advanced Features
+- **Time Travel Testing**: Test workflows with historical configurations
+- **Workflow Comparison**: See what changes between versions
+- **GitOps Preview**: Preview configuration changes before applying
+
+### 3. Integrate with Your Projects
+1. Copy your `.github/workflows` files locally
+2. Create a `secrets.env` for your project
+3. Test your workflows before pushing
+4. Set up ConfigHub for production-grade configuration management
+
+### 4. Learn More
+- Read about [ConfigHub integration examples](examples/README.md#confighub-integration-examples)
+- Explore the [API Reference](README.md#cli-reference)
+- Join the community and contribute!
+
+### Quick Reference Card
+
+```bash
+# Essential commands you'll use daily
+cub-actions run workflow.yml              # Run a workflow
+cub-actions validate workflow.yml         # Check compatibility
+cub-actions run workflow.yml --dry-run    # Preview execution
+cub-actions run workflow.yml -v           # Debug with verbose output
+cub-actions list-limitations              # See what's not supported
+
+# With configurations
+cub-actions run workflow.yml --secrets-file secrets.env
+cub-actions run workflow.yml --space production --unit webapp
+cub-actions run workflow.yml --as-of "2024-01-01"
+```
+
+**Remember:** The goal is to make your CI/CD development faster and more reliable. Start simple, then explore the advanced features as you need them.
+
+Happy workflow testing! 🚀

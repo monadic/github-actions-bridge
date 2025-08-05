@@ -1,6 +1,19 @@
 # GitHub Actions Bridge Examples
 
-This directory contains example workflows that demonstrate various features of the GitHub Actions Bridge. These examples show how to test GitHub Actions workflows locally with ConfigHub integration.
+[← Back to README](../README.md) | [← Back to User Guide](../USER_GUIDE.md)
+
+---
+
+This directory contains 15+ example workflows that demonstrate various features of the GitHub Actions Bridge. Each example includes a problem it solves and when to use it.
+
+## Quick Start
+
+If you're new here, start with these examples in order:
+1. [hello-world.yml](hello-world.yml) - Verify your setup works
+2. [with-secrets.yml](with-secrets.yml) - Learn secure secret handling
+3. [build-test-deploy.yml](build-test-deploy.yml) - See a complete CI/CD pipeline
+
+Then explore the advanced ConfigHub integration examples for powerful features like time-travel testing and configuration-driven deployments.
 
 ## Examples Overview
 

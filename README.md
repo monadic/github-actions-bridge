@@ -1,87 +1,207 @@
-# GitHub Actions Bridge for ConfigHub
+# GitHub Actions Bridge
 
-A ConfigHub bridge that enables local execution of GitHub Actions workflows using `act`, with proper workspace isolation, secret handling, and full bridge interface implementation.
+**Test GitHub Actions workflows locally with production configurations before pushing to GitHub.**
 
-## Features
+## Why This Matters
 
-- **Local GitHub Actions Execution** - Run workflows locally using `act`
-- **Secure Secret Management** - File-based secrets with encryption and leak detection
-- **Workspace Isolation** - Each execution gets an isolated workspace with cleanup
-- **ConfigHub Integration** - Full bridge interface implementation
-- **Compatibility Checking** - Warns about act limitations before execution
-- **Health Monitoring** - Built-in health checks and metrics
+Ever pushed a workflow change only to watch it fail in CI? Spent hours debugging workflows through commit-push-wait cycles? Wished you could test with real secrets and configurations locally?
+
+The GitHub Actions Bridge solves these problems by bringing GitHub Actions to your local machine, integrated with ConfigHub for secure configuration management.
+
+## Key Benefits
+
+✅ **Test Locally First** - Run workflows on your machine before committing  
+✅ **Real Configurations** - Use actual configs from ConfigHub, not mock data  
+✅ **Secure Secrets** - Access secrets without exposing them in code  
+✅ **Time Travel Testing** - Test workflows with past or future configurations  
+✅ **No More "Works on My Machine"** - Test with production-identical settings
+
+## Quick Example
+
+```bash
+# Test your deployment workflow locally with production configs
+cub-actions run .github/workflows/deploy.yml --space production --dry-run
+
+# See what would have happened if you ran this last week
+cub-actions run deploy.yml --as-of "2024-01-01" --space staging
+
+# Compare workflow changes before pushing
+cub-actions diff deploy.yml deploy-v2.yml --space production
+```
+
+## Documentation
+
+📚 **[User Guide](USER_GUIDE.md)** - Start here if you're new  
+🎯 **[Examples](examples/)** - 15+ real-world workflow examples with explanations  
+🔧 **[API Reference](#cli-reference)** - Detailed command documentation
 
 ## Quick Start
 
-### Prerequisites
-
-- Go 1.21 or later
-- Docker (for running workflows)
-- ConfigHub worker credentials
-
-### Installation
+### 1. Install
 
 ```bash
-# Clone the repository
+# Download latest release (macOS example)
+curl -L https://github.com/confighub/actions-bridge/releases/latest/download/cub-actions-darwin-arm64 -o cub-actions
+chmod +x cub-actions
+sudo mv cub-actions /usr/local/bin/
+```
+
+### 2. Verify Setup
+
+```bash
+# Check installation
+cub-actions version
+
+# Run a simple test
+cub-actions run examples/hello-world.yml
+```
+
+### 3. Run Your First Workflow
+
+```bash
+# Create a test workflow
+cat > test.yml << 'EOF'
+name: My Test
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Hello from local GitHub Actions!"
+EOF
+
+# Run it
+cub-actions run test.yml
+```
+
+## Real-World Examples
+
+### Test with Secrets (No More Hardcoding!)
+```bash
+# Create secure secrets file
+cat > secrets.env << EOF
+DATABASE_URL=postgresql://user:pass@localhost/db
+API_KEY=sk_live_xxxxx
+EOF
+
+# Run workflow with real secrets
+cub-actions run deploy.yml --secrets-file secrets.env
+```
+
+### Test Different Configurations
+```bash
+# Test how your workflow behaves in different environments
+cub-actions run deploy.yml --space development
+cub-actions run deploy.yml --space staging  
+cub-actions run deploy.yml --space production --dry-run
+```
+
+### Debug Failed Workflows
+```bash
+# See exactly what's happening
+cub-actions run problematic-workflow.yml -v
+
+# Check if workflow will work locally
+cub-actions validate workflow.yml
+```
+
+## How It Works
+
+```
+Your Workflow → GitHub Actions Bridge → ConfigHub → Local Execution
+                        ↓
+                 Workspace Isolation
+                 Secret Management  
+                 Compatibility Checks
+```
+
+The bridge uses [nektos/act](https://github.com/nektos/act) under the hood to execute GitHub Actions locally, adding:
+- ConfigHub integration for configurations and secrets
+- Workspace isolation for security
+- Compatibility checking and warnings
+- Advanced features like time-travel testing
+
+## Installation Options
+
+### Download Pre-built Binary (Recommended)
+
+See platform-specific downloads on the [releases page](https://github.com/confighub/actions-bridge/releases).
+
+### Build from Source
+
+```bash
 git clone https://github.com/confighub/actions-bridge
 cd actions-bridge
-
-# Build the project
 make build
-
-# Run tests
-make test
+./bin/cub-actions version
 ```
 
-### Running with Docker (Recommended)
+### Run with Docker
 
 ```bash
-# Copy environment file
-cp .env.example .env
-
-# Edit .env with your ConfigHub credentials
-vim .env
-
-# Start with Docker Compose
-docker-compose up -d
-
-# Check logs
-docker-compose logs -f actions-bridge
-
-# Stop the bridge
-docker-compose down
+docker run -v $(pwd):/workspace confighub/actions-bridge run workflow.yml
 ```
 
-### Running Manually
+## CLI Reference
 
-```bash
-# Set required environment variables
-export CONFIGHUB_WORKER_ID=your-worker-id
-export CONFIGHUB_WORKER_SECRET=your-worker-secret
-export CONFIGHUB_URL=https://api.confighub.com
-export ACTIONS_BRIDGE_BASE_DIR=/var/lib/actions-bridge
-
-# Run the bridge
-./bin/actions-bridge
-```
-
-### Using the CLI
+### Core Commands
 
 ```bash
 # Run a workflow
-./bin/cub-actions run test/fixtures/workflows/simple.yml
+cub-actions run [workflow-file] [flags]
 
-# Run with secrets
-./bin/cub-actions run workflow.yml --secrets-file secrets.env
+# Validate without running  
+cub-actions validate [workflow-file]
 
-# Validate a workflow
-./bin/cub-actions validate workflow.yml
+# Compare workflow versions
+cub-actions diff [workflow1] [workflow2]
 
 # List known limitations
-./bin/cub-actions list-limitations
+cub-actions list-limitations
 ```
 
+### Key Flags
+
+- `--space` - ConfigHub space (development, staging, production)
+- `--unit` - ConfigHub unit name
+- `--dry-run` - Preview what would happen without executing
+- `--secrets-file` - File containing secrets
+- `--as-of` - Run with historical configuration
+- `-v` - Verbose output for debugging
+
+## ConfigHub Integration
+
+When integrated with ConfigHub, the bridge enables powerful features:
+
+- **Configuration-Driven Deployments** - All values come from ConfigHub
+- **Time Travel** - Test with past/future configurations  
+- **Config-Triggered Workflows** - Auto-run when configs change
+- **GitOps Without Git** - Use ConfigHub spaces instead of branches
+
+See the [ConfigHub examples](examples/README.md#confighub-integration-examples) for detailed use cases.
+
+## Known Limitations
+
+Some GitHub Actions features don't work in local execution:
+
+- `actions/cache` - No caching support
+- GitHub API calls - Limited or mocked
+- Pull request creation - Not supported locally
+- Cross-workflow artifacts - Local only
+
+Run `cub-actions list-limitations` for the full list.
+
+## Getting Help
+
+- 📖 **[User Guide](USER_GUIDE.md)** - Comprehensive walkthrough
+- 🎯 **[Examples](examples/)** - Learn by doing
+- 💬 **[Issues](https://github.com/confighub/actions-bridge/issues)** - Report bugs or request features
+- 🤝 **[Contributing](CONTRIBUTING.md)** - Help improve the bridge
+
 ## Architecture
+
+<details>
+<summary>Technical Details (click to expand)</summary>
 
 ```
 ConfigHub API
@@ -95,197 +215,41 @@ ConfigHub API
 |    - Apply() -> Execute          |
 |    - Refresh() -> Status         |
 |    - Destroy() -> Cleanup        |
-|    - Import() -> Discover        |
-|    - Finalize() -> Archive       |
 +----------------------------------+
-|                                  |
 |    Workspace Manager             |
-|    - Isolation per exec          |
+|    - Isolation per execution     |
 |    - Secure cleanup              |
-|    - Audit trail                 |
-|                                  |
 +----------------------------------+
-|                                  |
 |    Act Wrapper                   |
+|    - nektos/act integration      |
 |    - Compatibility layer         |
-|    - Secret file handling        |
-|    - Output capture              |
-|                                  |
 +----------------------------------+
 ```
-
-## CLI Usage
-
-### Run Command
-
-```bash
-cub-actions run [workflow-file] [flags]
-
-Flags:
-  --space string         ConfigHub space
-  --unit string          ConfigHub unit
-  --dry-run              Show what would be executed
-  --event string         GitHub event type (default "workflow_dispatch")
-  -i, --input strings    Workflow inputs (key=value)
-  --platform string      Execution platform (default "linux/amd64")
-  --artifact-dir string  Directory to save artifacts
-  --env-file string      Environment file to load
-  --secrets-file string  Secrets file to load
-  --validate             Validate workflow without running
-  --timeout int          Execution timeout in seconds (default 3600)
-```
-
-### Validate Command
-
-```bash
-cub-actions validate [workflow-file]
-```
-
-Checks if a workflow is valid and can be executed locally with act.
-
-## Configuration
-
-### Environment Variables
-
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `CONFIGHUB_WORKER_ID` | ConfigHub worker ID | Required |
-| `CONFIGHUB_WORKER_SECRET` | ConfigHub worker secret | Required |
-| `CONFIGHUB_URL` | ConfigHub API URL | `https://api.confighub.com` |
-| `ACTIONS_BRIDGE_BASE_DIR` | Base directory for workspaces | `/var/lib/actions-bridge` |
-| `ACT_DEFAULT_IMAGE` | Default Docker image for act | `catthehacker/ubuntu:act-latest` |
-| `ACT_PLATFORM` | Default platform | `linux/amd64` |
-| `MAX_CONCURRENT_WORKFLOWS` | Max concurrent executions | `5` |
-| `HEALTH_ADDR` | Health check server address | `:8080` |
-
-### Secrets File Format
-
-```bash
-# secrets.env
-API_KEY=your-api-key
-DATABASE_URL=postgres://user:pass@localhost/db
-GITHUB_TOKEN=ghp_xxxxxxxxxxxx
-```
-
-## Known Limitations
-
-When running GitHub Actions locally with act, be aware of these limitations:
-
-1. **No Caching** - `actions/cache` is not supported
-2. **Limited Artifacts** - Artifacts are saved locally only
-3. **No Cross-workflow Artifacts** - Can't download from other workflows
-4. **No Registry Push** - Docker push operations are disabled
-5. **Simulated GITHUB_TOKEN** - GitHub token is simulated
-6. **No GitHub API** - API calls may fail or need mocking
-7. **No Pull Requests** - Can't create PRs locally
-8. **No Releases** - Can't create GitHub releases
-
-## Health Monitoring
-
-The bridge exposes health endpoints:
-
-- `/health` - Overall health status
-- `/ready` - Readiness check
-- `/live` - Liveness check
-- `/metrics` - Prometheus metrics
-
-## Development
 
 ### Project Structure
 
 ```
-.
-|-- cmd/
-|   |-- act-test/        # Act validation tool
-|   |-- actions-bridge/  # Main bridge worker
-|   `-- actions-cli/     # CLI tool
-|-- pkg/
-|   |-- bridge/          # Core bridge implementation
-|   `-- leakdetector/    # Secret leak detection
-|-- test/
-|   |-- fixtures/        # Test workflows
-|   `-- integration/     # Integration tests
-|-- Dockerfile           # Multi-stage Docker build
-|-- docker-compose.yml   # Docker Compose configuration
-|-- prometheus.yml       # Prometheus monitoring config
-|-- .env.example         # Example environment file
-|-- Makefile
-`-- go.mod
+github-actions-bridge/
+├── examples/           # 15+ workflow examples
+├── cmd/               # CLI and bridge binaries  
+├── pkg/               # Core implementation
+├── test/              # Test suites
+├── USER_GUIDE.md      # Beginner's guide
+├── Dockerfile         # Container image
+└── docker-compose.yml # Easy deployment
 ```
 
-### Building
-
-```bash
-# Build all binaries
-make build
-
-# Build specific binary
-make build-bridge
-make build-cli
-make build-act-test
-
-# Run tests
-make test
-
-# Run integration tests
-make test-integration
-```
-
-### Testing
-
-```bash
-# Run all tests
-make test
-
-# Run with Docker (for act tests)
-SKIP_ACT_TESTS=0 make test
-
-# Run specific test
-go test -v ./pkg/bridge -run TestWorkspaceIsolation
-```
-
-## Security
-
-- Secrets are stored in files with 0600 permissions
-- Workspace isolation prevents cross-execution access
-- Secure cleanup overwrites secrets before deletion
-- Leak detection prevents secrets in logs
-- All secrets are sanitized in output
-
-## Troubleshooting
-
-### Docker not found
-Ensure Docker is installed and running:
-```bash
-docker version
-```
-
-### Workflow fails locally but works on GitHub
-Check the compatibility warnings:
-```bash
-cub-actions validate workflow.yml
-```
-
-### Permission denied errors
-Ensure the base directory is writable:
-```bash
-mkdir -p /var/lib/actions-bridge
-chmod 755 /var/lib/actions-bridge
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+</details>
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
 - [nektos/act](https://github.com/nektos/act) - Local GitHub Actions runner
 - [ConfigHub](https://confighub.com) - Configuration management platform
+
+---
+
+**Ready to test your workflows locally?** Start with the **[User Guide](USER_GUIDE.md)** or jump into the **[Examples](examples/)**!
