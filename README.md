@@ -195,22 +195,22 @@ The bridge exposes health endpoints:
 
 ```
 .
-├── cmd/
-│   ├── act-test/        # Act validation tool
-│   ├── actions-bridge/  # Main bridge worker
-│   └── actions-cli/     # CLI tool
-├── pkg/
-│   ├── bridge/          # Core bridge implementation
-│   └── leakdetector/    # Secret leak detection
-├── test/
-│   ├── fixtures/        # Test workflows
-│   └── integration/     # Integration tests
-├── Dockerfile           # Multi-stage Docker build
-├── docker-compose.yml   # Docker Compose configuration
-├── prometheus.yml       # Prometheus monitoring config
-├── .env.example         # Example environment file
-├── Makefile
-└── go.mod
+|-- cmd/
+|   |-- act-test/        # Act validation tool
+|   |-- actions-bridge/  # Main bridge worker
+|   `-- actions-cli/     # CLI tool
+|-- pkg/
+|   |-- bridge/          # Core bridge implementation
+|   `-- leakdetector/    # Secret leak detection
+|-- test/
+|   |-- fixtures/        # Test workflows
+|   `-- integration/     # Integration tests
+|-- Dockerfile           # Multi-stage Docker build
+|-- docker-compose.yml   # Docker Compose configuration
+|-- prometheus.yml       # Prometheus monitoring config
+|-- .env.example         # Example environment file
+|-- Makefile
+`-- go.mod
 ```
 
 ### Building

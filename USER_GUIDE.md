@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Say Hello
-        run: echo "Hello from GitHub Actions Bridge! 👋"
+        run: echo "Hello from GitHub Actions Bridge!"
       
       - name: Show date
         run: date
@@ -98,7 +98,7 @@ cub-actions run hello.yml
 You should see output like:
 ```
 Running workflow: hello.yml
-✓ Basic workflow execution successful
+[OK] Basic workflow execution successful
 Execution completed in 5.2s
 Exit code: 0
 ```
@@ -202,14 +202,14 @@ This will tell you about:
 
 Some GitHub Actions features don't work locally:
 
-### ❌ What doesn't work:
+### What doesn't work:
 - `actions/cache` - No caching support
 - Creating pull requests
 - Pushing to GitHub
 - GitHub API calls (unless you provide a token)
 - Cross-workflow artifacts
 
-### ✅ What does work:
+### What does work:
 - Running commands
 - Using Docker containers
 - Environment variables
@@ -385,4 +385,4 @@ Now that you've got the basics:
 3. Set up the bridge worker for ConfigHub integration
 4. Contribute improvements to the project!
 
-Happy workflow running! 🚀
+Happy workflow running!
