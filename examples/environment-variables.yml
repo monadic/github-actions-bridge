@@ -1,0 +1,50 @@
+name: Environment Variables
+on: [push, workflow_dispatch]
+
+env:
+  # Global environment variables
+  APP_NAME: my-app
+  DEFAULT_REGION: us-east-1
+
+jobs:
+  show-env:
+    runs-on: ubuntu-latest
+    env:
+      # Job-level environment variables
+      JOB_TYPE: demonstration
+      BUILD_NUMBER: ${{ github.run_number }}
+    
+    steps:
+      - name: Display global variables
+        run: |
+          echo "App Name: $APP_NAME"
+          echo "Default Region: $DEFAULT_REGION"
+      
+      - name: Display job variables
+        run: |
+          echo "Job Type: $JOB_TYPE"
+          echo "Build Number: $BUILD_NUMBER"
+      
+      - name: Step with its own variables
+        env:
+          STEP_VAR: "I'm local to this step"
+          COMPUTED_VAR: "$APP_NAME-$BUILD_NUMBER"
+        run: |
+          echo "Step Variable: $STEP_VAR"
+          echo "Computed Variable: $COMPUTED_VAR"
+      
+      - name: Use system environment
+        run: |
+          echo "PATH length: ${#PATH}"
+          echo "HOME: $HOME"
+          echo "USER: $USER"
+          
+      - name: Export variables for next steps
+        run: |
+          echo "EXPORTED_VAR=hello-from-previous-step" >> $GITHUB_ENV
+          echo "TIMESTAMP=$(date +%s)" >> $GITHUB_ENV
+      
+      - name: Use exported variables
+        run: |
+          echo "Exported Variable: $EXPORTED_VAR"
+          echo "Timestamp: $TIMESTAMP"

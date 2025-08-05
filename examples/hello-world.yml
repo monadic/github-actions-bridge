@@ -1,0 +1,21 @@
+name: Hello World
+on: [push, workflow_dispatch]
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: echo "Hello from GitHub Actions Bridge!"
+      
+      - name: Show date
+        run: date
+      
+      - name: List files
+        run: ls -la
+      
+      - name: System info
+        run: |
+          echo "Runner OS: $RUNNER_OS"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          uname -a

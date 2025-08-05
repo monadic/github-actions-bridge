@@ -1,0 +1,98 @@
+name: Matrix Build Strategy
+on: [push, workflow_dispatch]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-20.04]
+        go-version: ['1.19', '1.20', '1.21']
+        include:
+          # Add specific configuration for certain combinations
+          - os: ubuntu-latest
+            go-version: '1.21'
+            experimental: true
+        exclude:
+          # Skip certain combinations
+          - os: ubuntu-20.04
+            go-version: '1.19'
+      fail-fast: false  # Continue running other jobs if one fails
+    
+    name: Test Go ${{ matrix.go-version }} on ${{ matrix.os }}
+    
+    steps:
+      - name: Setup info
+        run: |
+          echo "Testing on ${{ matrix.os }} with Go ${{ matrix.go-version }}"
+          if [ "${{ matrix.experimental }}" = "true" ]; then
+            echo "This is an experimental build!"
+          fi
+      
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Go
+        run: |
+          echo "Setting up Go ${{ matrix.go-version }}..."
+          echo "Go version set!"
+      
+      - name: Install dependencies
+        run: |
+          echo "Installing dependencies for Go ${{ matrix.go-version }}..."
+          echo "Dependencies installed!"
+      
+      - name: Run tests
+        run: |
+          echo "Running test suite..."
+          echo "- Testing package A..."
+          echo "- Testing package B..."
+          echo "- Testing package C..."
+          echo "✓ All tests passed on ${{ matrix.os }} with Go ${{ matrix.go-version }}!"
+      
+      - name: Generate coverage report
+        if: matrix.go-version == '1.21' && matrix.os == 'ubuntu-latest'
+        run: |
+          echo "Generating coverage report..."
+          echo "Coverage: 85.3%"
+
+  build-multiple-platforms:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+          - goos: darwin
+            goarch: amd64
+          - goos: darwin
+            goarch: arm64
+          - goos: windows
+            goarch: amd64
+    
+    name: Build for ${{ matrix.goos }}/${{ matrix.goarch }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          echo "Building for $GOOS/$GOARCH..."
+          OUTPUT="myapp-$GOOS-$GOARCH"
+          if [ "$GOOS" = "windows" ]; then
+            OUTPUT="${OUTPUT}.exe"
+          fi
+          echo "Built binary: $OUTPUT"
+          
+      - name: Display binary info
+        run: |
+          echo "Binary details:"
+          echo "- Platform: ${{ matrix.goos }}/${{ matrix.goarch }}"
+          echo "- Size: 15MB"
+          echo "- Version: v1.0.${{ github.run_number }}"

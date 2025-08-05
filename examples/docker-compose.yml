@@ -1,0 +1,184 @@
+name: Docker Compose Workflow
+on: [push, workflow_dispatch]
+
+env:
+  COMPOSE_PROJECT_NAME: myapp
+
+jobs:
+  test-with-compose:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Create docker-compose.yml
+        run: |
+          cat > docker-compose.test.yml << 'EOF'
+          version: '3.8'
+          
+          services:
+            app:
+              image: node:18-alpine
+              working_dir: /app
+              volumes:
+                - ./app:/app
+              environment:
+                - NODE_ENV=test
+                - DB_HOST=postgres
+                - REDIS_HOST=redis
+              command: sh -c "echo 'App started' && sleep 30"
+              depends_on:
+                - postgres
+                - redis
+            
+            postgres:
+              image: postgres:15-alpine
+              environment:
+                POSTGRES_DB: testdb
+                POSTGRES_USER: testuser
+                POSTGRES_PASSWORD: testpass
+              ports:
+                - "5432:5432"
+            
+            redis:
+              image: redis:7-alpine
+              ports:
+                - "6379:6379"
+          EOF
+          
+          # Create app directory with test file
+          mkdir -p app
+          echo "console.log('Test app running');" > app/index.js
+      
+      - name: Start services
+        run: |
+          echo "Starting services with docker-compose..."
+          docker-compose -f docker-compose.test.yml up -d
+          
+          echo "Waiting for services to be ready..."
+          sleep 5
+          
+          echo "Services status:"
+          docker-compose -f docker-compose.test.yml ps
+      
+      - name: Test database connection
+        run: |
+          echo "Testing PostgreSQL connection..."
+          docker-compose -f docker-compose.test.yml exec -T postgres pg_isready -U testuser
+          echo "✓ PostgreSQL is ready!"
+      
+      - name: Test Redis connection
+        run: |
+          echo "Testing Redis connection..."
+          docker-compose -f docker-compose.test.yml exec -T redis redis-cli ping
+          echo "✓ Redis is ready!"
+      
+      - name: Run application tests
+        run: |
+          echo "Running application tests..."
+          docker-compose -f docker-compose.test.yml exec -T app sh -c "
+            echo 'Running test suite...'
+            echo '- Testing database operations...'
+            echo '- Testing cache operations...'
+            echo '- Testing API endpoints...'
+            echo '✓ All tests passed!'
+          "
+      
+      - name: View logs
+        if: always()
+        run: |
+          echo "=== Application Logs ==="
+          docker-compose -f docker-compose.test.yml logs app
+          echo "========================"
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          echo "Stopping and removing containers..."
+          docker-compose -f docker-compose.test.yml down -v
+          echo "Cleanup complete!"
+
+  build-with-compose:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Create multi-stage Dockerfile
+        run: |
+          cat > Dockerfile << 'EOF'
+          # Build stage
+          FROM golang:1.21-alpine AS builder
+          WORKDIR /build
+          COPY . .
+          RUN echo "Building application..." && \
+              echo "Build complete!"
+          
+          # Runtime stage
+          FROM alpine:latest
+          RUN apk add --no-cache ca-certificates
+          WORKDIR /app
+          COPY --from=builder /build/app /app/
+          CMD ["echo", "Application running"]
+          EOF
+          
+          # Create dummy app file
+          echo "package main" > app
+      
+      - name: Create build compose file
+        run: |
+          cat > docker-compose.build.yml << 'EOF'
+          version: '3.8'
+          
+          services:
+            app:
+              build:
+                context: .
+                dockerfile: Dockerfile
+              image: myapp:latest
+              
+            nginx:
+              image: nginx:alpine
+              ports:
+                - "8080:80"
+              volumes:
+                - ./nginx.conf:/etc/nginx/nginx.conf:ro
+              depends_on:
+                - app
+          EOF
+          
+          # Create nginx config
+          cat > nginx.conf << 'EOF'
+          events { worker_connections 1024; }
+          http {
+            server {
+              listen 80;
+              location / {
+                return 200 "MyApp is running\n";
+                add_header Content-Type text/plain;
+              }
+            }
+          }
+          EOF
+      
+      - name: Build images
+        run: |
+          echo "Building images with docker-compose..."
+          docker-compose -f docker-compose.build.yml build
+          echo "✓ Build complete!"
+      
+      - name: Start application stack
+        run: |
+          echo "Starting application stack..."
+          docker-compose -f docker-compose.build.yml up -d
+          
+          sleep 3
+          
+          echo "Testing application endpoint..."
+          curl -f http://localhost:8080/ || exit 1
+          echo "✓ Application is responding!"
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose -f docker-compose.build.yml down
+          echo "Cleanup complete!"

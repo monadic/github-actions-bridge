@@ -1,0 +1,81 @@
+name: Multi-Job Workflow
+on: [push, workflow_dispatch]
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      timestamp: ${{ steps.time.outputs.timestamp }}
+    
+    steps:
+      - name: Generate version
+        id: version
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+      
+      - name: Get timestamp
+        id: time
+        run: |
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          echo "timestamp=$TIMESTAMP" >> $GITHUB_OUTPUT
+          echo "Build timestamp: $TIMESTAMP"
+  
+  build:
+    runs-on: ubuntu-latest
+    needs: prepare
+    
+    steps:
+      - name: Display build info
+        run: |
+          echo "Building version: ${{ needs.prepare.outputs.version }}"
+          echo "Build time: ${{ needs.prepare.outputs.timestamp }}"
+      
+      - name: Simulate build
+        run: |
+          echo "Compiling application..."
+          sleep 2
+          echo "Build completed successfully!"
+      
+      - name: Create build artifact
+        run: |
+          mkdir -p dist
+          echo "APP_VERSION=${{ needs.prepare.outputs.version }}" > dist/build.info
+          echo "BUILD_TIME=${{ needs.prepare.outputs.timestamp }}" >> dist/build.info
+          echo "Simulated binary content" > dist/app.bin
+          ls -la dist/
+  
+  test:
+    runs-on: ubuntu-latest
+    needs: build
+    
+    steps:
+      - name: Run unit tests
+        run: |
+          echo "Running unit tests..."
+          sleep 1
+          echo "✓ All unit tests passed!"
+      
+      - name: Run integration tests
+        run: |
+          echo "Running integration tests..."
+          sleep 1
+          echo "✓ All integration tests passed!"
+  
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build, test]
+    if: success()
+    
+    steps:
+      - name: Deploy notification
+        run: |
+          echo "=============================="
+          echo "DEPLOYMENT SUMMARY"
+          echo "=============================="
+          echo "Version: ${{ needs.prepare.outputs.version }}"
+          echo "Timestamp: ${{ needs.prepare.outputs.timestamp }}"
+          echo "Status: Ready for deployment"
+          echo "=============================="
