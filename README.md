@@ -108,7 +108,7 @@ cub unit apply --space production deploy-workflow --restore 1
 
 📚 **[User Guide](USER_GUIDE.md)** - Start here if you're new  
 🎯 **[Examples](examples/)** - 15+ real-world workflow examples with explanations  
-🔧 **[API Reference](#cli-reference)** - Detailed command documentation
+🔧 **[CLI Reference](CLI_REFERENCE.md)** - Complete command documentation
 
 ## Prerequisites
 
@@ -271,11 +271,26 @@ docker-compose -f docker-compose.secure.yml up -d
 
 ⚠️ **Security Note**: The default `docker-compose.yml` mounts the Docker socket for convenience but this is a security risk. For production use, see [SECURITY.md](SECURITY.md) and use `docker-compose.secure.yml`.
 
-## CLI Reference
+## Quick CLI Examples
 
-The GitHub Actions Bridge uses standard ConfigHub CLI commands:
+### Local Execution with cub-worker-actions
 
-### Core Commands
+```bash
+# Run a workflow
+./bin/cub-worker-actions run examples/hello-world.yml
+
+# Validate a workflow
+./bin/cub-worker-actions validate examples/build.yml
+
+# Run with secrets
+./bin/cub-worker-actions run examples/deploy.yml --secrets-file secrets.env
+```
+
+See [CLI_REFERENCE.md](CLI_REFERENCE.md) for complete command documentation.
+
+### ConfigHub Integration
+
+When using with ConfigHub:
 
 ```bash
 # Create a workflow unit
@@ -284,21 +299,9 @@ cub unit create --space [space] [unit-name] [workflow-file]
 # Apply (run) a workflow  
 cub unit apply --space [space] [unit-name]
 
-# Compare workflow versions
-cub revision list --space [space] --where "UnitSlug = '[unit-name]'"
-
 # View workflow details
 cub unit get --space [space] [unit-name] --extended
 ```
-
-### Key Flags
-
-- `--space` - ConfigHub space (development, staging, production)
-- `--unit` - ConfigHub unit name
-- `--dry-run` - Preview what would happen without executing
-- `--secrets-file` - File containing secrets
-- `--as-of` - Run with historical configuration
-- `-v` - Verbose output for debugging
 
 ## ConfigHub Integration
 

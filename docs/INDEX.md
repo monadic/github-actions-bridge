@@ -7,6 +7,7 @@ This index provides a complete overview of all documentation for the GitHub Acti
 ### Core Documentation
 - **[README.md](../README.md)** - Project overview, quick start, and examples
 - **[USER_GUIDE.md](../USER_GUIDE.md)** - Comprehensive user guide and tutorials
+- **[CLI_REFERENCE.md](../CLI_REFERENCE.md)** - Complete CLI command reference
 - **[CONTRIBUTING.md](../CONTRIBUTING.md)** - How to contribute to the project
 
 ### Technical Documentation
