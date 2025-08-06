@@ -125,6 +125,8 @@ Before using GitHub Actions Bridge, you need to install these dependencies:
    - Windows: `choco install act-cli`
    - Verify: `act --version`
 
+3. **Security Note** - Read [SECURITY.md](SECURITY.md) for production deployment guidance
+
 ## Quick Start
 
 ### 1. Install Dependencies
@@ -192,9 +194,11 @@ DATABASE_URL=postgresql://user:pass@localhost/db
 API_KEY=sk_live_xxxxx
 EOF
 
-# Create unit with secrets configuration
+# Run workflow with secrets
+./bin/cub-worker-actions run examples/with-secrets.yml --secrets-file secrets.env
+
+# Or use ConfigHub for production
 cub unit create --space production deploy deploy.yml
-# Secrets are managed through ConfigHub, not local files
 cub unit apply --space production deploy
 ```
 
@@ -258,8 +262,14 @@ make build
 ### Run with Docker
 
 ```bash
-docker run -v $(pwd):/workspace confighub/actions-bridge run workflow.yml
+# Development (with security warnings)
+docker-compose up -d
+
+# Production (secure configuration)
+docker-compose -f docker-compose.secure.yml up -d
 ```
+
+⚠️ **Security Note**: The default `docker-compose.yml` mounts the Docker socket for convenience but this is a security risk. For production use, see [SECURITY.md](SECURITY.md) and use `docker-compose.secure.yml`.
 
 ## CLI Reference
 
@@ -301,21 +311,50 @@ When integrated with ConfigHub, the bridge enables powerful features:
 
 See the [ConfigHub examples](examples/README.md#confighub-integration-examples) for detailed use cases.
 
+## Examples Status
+
+We provide 17+ example workflows in the `examples/` directory:
+
+✅ **Working Examples** (15):
+- Basic workflows (hello-world, environment-variables)
+- Complex workflows (matrix-builds, multi-job, conditional-execution)
+- Docker workflows (docker-compose-improved)
+- ConfigHub integration (config-driven-deployment, time-travel-testing)
+- AI integration (claude-orchestrated-ops, worker-calls-claude)
+
+⚠️ **GitHub-Specific** (2):
+- artifact-handling.yml (uses actions/upload-artifact)
+- file-persistence.yml (uses actions/upload-artifact)
+
+💡 **Improved Versions**: We provide local-compatible versions of GitHub-specific workflows (e.g., artifact-handling-improved.yml)
+
 ## Known Limitations
 
 Some GitHub Actions features don't work in local execution:
 
 - `actions/cache` - No caching support
+- `actions/upload-artifact` & `actions/download-artifact` - Use local alternatives
 - GitHub API calls - Limited or mocked
 - Pull request creation - Not supported locally
 - Cross-workflow artifacts - Local only
 
 See the [act documentation](https://github.com/nektos/act#known-issues) for the full list of limitations.
 
-## Getting Help
+## Documentation
 
+**📚 [Complete Documentation Index](docs/INDEX.md)** - Full documentation map and guides
+
+### Getting Started
 - 📖 **[User Guide](USER_GUIDE.md)** - Comprehensive walkthrough
-- 🎯 **[Examples](examples/)** - Learn by doing
+- 🎯 **[Examples](examples/)** - Learn by doing with 17+ examples
+- 🔒 **[Security](SECURITY.md)** - Security considerations and best practices
+
+### Technical Details
+- 🏢 **[Enterprise Features](ENTERPRISE_FEATURES.md)** - Features provided by ConfigHub SaaS
+- 📦 **[SDK Validation](SDK_VALIDATION.md)** - ConfigHub SDK dependency details
+- 📝 **[SDK Requests](SDK_REQUESTS.md)** - Feature requests for ConfigHub SDK
+
+### Contributing
 - 💬 **[Issues](https://github.com/confighub/actions-bridge/issues)** - Report bugs or request features
 - 🤝 **[Contributing](CONTRIBUTING.md)** - Help improve the bridge
 
@@ -361,6 +400,15 @@ github-actions-bridge/
 ```
 
 </details>
+
+## Dependencies
+
+### Core Dependencies
+- **[nektos/act](https://github.com/nektos/act)** - Local GitHub Actions runner (Apache 2.0)
+- **[ConfigHub SDK](https://github.com/confighub/sdk)** - Official worker protocol SDK (MIT)
+- **[spf13/cobra](https://github.com/spf13/cobra)** - CLI framework (Apache 2.0)
+
+All dependencies are open source with permissive licenses.
 
 ## License
 

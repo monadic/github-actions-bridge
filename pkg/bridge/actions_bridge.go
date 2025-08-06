@@ -23,6 +23,7 @@ type ActionsBridge struct {
 	baseDir            string
 	executionSemaphore chan struct{} // Limit concurrent executions
 	maxConcurrent      int
+	logger             *Logger
 }
 
 // NewActionsBridge creates a new GitHub Actions bridge
@@ -39,6 +40,9 @@ func NewActionsBridge(baseDir string) (*ActionsBridge, error) {
 
 	maxConcurrent := 5 // Default, can be made configurable
 
+	logger := NewLogger("ActionsBridge")
+	logger.Info("Initializing GitHub Actions Bridge: baseDir=%s maxConcurrent=%d", baseDir, maxConcurrent)
+
 	return &ActionsBridge{
 		workspaceManager:   workspaceManager,
 		actRunner:          NewActRunner("linux/amd64", "catthehacker/ubuntu:act-22.04"), // Use specific version
@@ -47,6 +51,7 @@ func NewActionsBridge(baseDir string) (*ActionsBridge, error) {
 		baseDir:            baseDir,
 		executionSemaphore: make(chan struct{}, maxConcurrent),
 		maxConcurrent:      maxConcurrent,
+		logger:             logger,
 	}, nil
 }
 
@@ -80,6 +85,18 @@ func (b *ActionsBridge) Info(opts api.InfoOptions) api.BridgeWorkerInfo {
 
 // Apply executes a GitHub Actions workflow
 func (b *ActionsBridge) Apply(ctx api.BridgeWorkerContext, payload api.BridgeWorkerPayload) error {
+	// Recover from panics
+	defer func() {
+		if r := recover(); r != nil {
+			b.logger.Error("PANIC in Apply: %v", r)
+			b.sendError(ctx, payload, "Internal error", fmt.Errorf("panic: %v", r), time.Now())
+		}
+	}()
+
+	// Log workflow execution start
+	b.logger.Info("Starting workflow execution: space=%s unit=%s revision=%d", 
+		payload.SpaceID, payload.UnitSlug, payload.RevisionNum)
+
 	// Acquire execution slot with context awareness
 	select {
 	case b.executionSemaphore <- struct{}{}:
@@ -117,7 +134,9 @@ func (b *ActionsBridge) Apply(ctx api.BridgeWorkerContext, payload api.BridgeWor
 	}
 	defer func() {
 		if err := ws.SecureCleanup(); err != nil {
-			log.Printf("Failed to cleanup workspace %s: %v", ws.ID, err)
+			b.logger.Warn("Failed to cleanup workspace %s: %v", ws.ID, err)
+		} else {
+			b.logger.Debug("Cleaned up workspace %s", ws.ID)
 		}
 		b.workspaceManager.RemoveWorkspace(ws.ID)
 	}()
@@ -180,10 +199,15 @@ func (b *ActionsBridge) Apply(ctx api.BridgeWorkerContext, payload api.BridgeWor
 	}
 
 	// Execute workflow
+	b.logger.Debug("Executing workflow for unit=%s", payload.UnitSlug)
 	result, err := b.actRunner.Execute(execCtx)
 	if err != nil {
+		b.logger.Error("Workflow execution failed: unit=%s error=%v", payload.UnitSlug, err)
 		return b.sendError(ctx, payload, "Workflow execution failed", err, startTime)
 	}
+
+	// Log execution result
+	b.logger.WorkflowExecutionLog(result.ID, payload.UnitSlug, "success", result.Duration.String())
 
 	// Sanitize logs
 	result.Logs = b.secretHandler.SanitizeLogs(result.Logs)
@@ -475,13 +499,15 @@ func (b *ActionsBridge) parseExtraParams(data []byte) (extraParameters, error) {
 func (b *ActionsBridge) stripKubernetesMetadata(data []byte) []byte {
 	lines := bytes.Split(data, []byte("\n"))
 
-	// If we have more than 4 lines, skip the first 4
-	if len(lines) > 4 {
-		// Join the remaining lines back together
-		return bytes.Join(lines[4:], []byte("\n"))
+	// Check if the first line contains apiVersion: actions.confighub.com
+	if len(lines) > 0 && bytes.Contains(lines[0], []byte("apiVersion:")) && bytes.Contains(lines[0], []byte("actions.confighub.com")) {
+		// If we have more than 4 lines, skip the first 4
+		if len(lines) > 4 {
+			return bytes.Join(lines[4:], []byte("\n"))
+		}
 	}
 
-	// If 4 or fewer lines, return empty (shouldn't happen with valid workflow)
+	// Return data as-is if no ConfigHub metadata found
 	return data
 }
 

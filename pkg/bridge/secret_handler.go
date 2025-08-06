@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -76,6 +77,25 @@ func (sh *SecretHandler) PrepareSecrets(workspace *Workspace, secrets map[string
 		}
 
 		fmt.Fprintf(file, "%s=%s\n", key, value)
+	}
+
+	// Also write encrypted secrets file for secure storage
+	encryptedPath := filepath.Join(workspace.SecretDir, ".secrets.enc")
+	encryptedSecrets, err := sh.EncryptSecrets(secrets)
+	if err != nil {
+		return "", fmt.Errorf("encrypt secrets: %w", err)
+	}
+
+	encFile, err := os.OpenFile(encryptedPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0600)
+	if err != nil {
+		return "", fmt.Errorf("create encrypted secrets file: %w", err)
+	}
+	defer encFile.Close()
+
+	// Write encrypted secrets as JSON
+	enc := json.NewEncoder(encFile)
+	if err := enc.Encode(encryptedSecrets); err != nil {
+		return "", fmt.Errorf("write encrypted secrets: %w", err)
 	}
 
 	return secretsPath, nil

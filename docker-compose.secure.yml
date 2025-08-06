@@ -25,28 +25,41 @@ services:
       
       # Debug mode
       DEBUG: ${DEBUG:-false}
+      
+      # Security: Use Docker-in-Docker instead of socket mounting
+      DOCKER_HOST: tcp://docker:2376
+      DOCKER_TLS_VERIFY: 1
+      DOCKER_CERT_PATH: /certs/client
     
     ports:
       - "8080:8080"  # Health check and metrics
     
     volumes:
-      # WARNING: Docker socket mount is a security risk!
-      # This gives the container full control over the Docker daemon.
-      # For production use, see docker-compose.secure.yml for a safer alternative.
-      - /var/run/docker.sock:/var/run/docker.sock
       # Persistent storage for workspaces
       - actions-bridge-data:/var/lib/actions-bridge
+      # Docker TLS certificates
+      - docker-certs-client:/certs/client:ro
       # Optional: Mount local workflows for testing
       # - ./test/fixtures/workflows:/workflows:ro
     
     networks:
       - actions-bridge-net
     
-    # WARNING: Disabling AppArmor reduces container security!
-    # This is required for act to work with the Docker socket.
-    # For production use, see docker-compose.secure.yml for better isolation.
-    security_opt:
-      - apparmor:unconfined
+    # Security: Remove AppArmor unconfined
+    # security_opt:
+    #   - apparmor:unconfined
+    
+    # Drop unnecessary capabilities
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+    
+    # Run as non-root user
+    user: "1000:1000"
     
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
@@ -54,6 +67,30 @@ services:
       timeout: 3s
       retries: 3
       start_period: 5s
+    
+    depends_on:
+      - docker
+
+  # Docker-in-Docker service for secure Docker access
+  docker:
+    image: docker:24-dind
+    container_name: actions-bridge-docker
+    restart: unless-stopped
+    privileged: true
+    environment:
+      DOCKER_TLS_CERTDIR: /certs
+    volumes:
+      - docker-certs-ca:/certs/ca
+      - docker-certs-client:/certs/client
+      - docker-data:/var/lib/docker
+    networks:
+      - actions-bridge-net
+    # Limit resources
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
 
   # Optional: Prometheus for monitoring
   prometheus:
@@ -72,9 +109,20 @@ services:
       - prometheus-data:/prometheus
     networks:
       - actions-bridge-net
+    # Security hardening
+    read_only: true
+    user: "65534:65534"  # nobody user
+    cap_drop:
+      - ALL
 
 volumes:
   actions-bridge-data:
+    driver: local
+  docker-data:
+    driver: local
+  docker-certs-ca:
+    driver: local
+  docker-certs-client:
     driver: local
   prometheus-data:
     driver: local

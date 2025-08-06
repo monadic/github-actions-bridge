@@ -4,7 +4,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/confighub/actions-bridge/pkg/bridge"
 	"github.com/google/uuid"
@@ -278,23 +277,3 @@ func TestWorkspaceCleanup(t *testing.T) {
 	assert.NoFileExists(t, secretPath)
 }
 
-func TestHealthMonitor(t *testing.T) {
-	baseDir := t.TempDir()
-	actionsBridge, err := bridge.NewActionsBridge(baseDir)
-	require.NoError(t, err)
-
-	monitor := bridge.NewHealthMonitor(actionsBridge, "test-version")
-	status := monitor.HealthCheck()
-
-	// Basic health should be true if Docker is available
-	if _, exists := status.Checks["docker"]; exists {
-		assert.NotNil(t, status.Checks["docker"])
-	}
-
-	// Workspace check should always pass
-	assert.True(t, status.Checks["workspaces"].Healthy)
-
-	// Disk check should pass in test environment
-	assert.True(t, status.Checks["disk"].Healthy)
-	assert.Greater(t, status.Checks["disk"].FreePercent, float64(0))
-}

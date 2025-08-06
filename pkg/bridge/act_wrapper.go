@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -94,6 +95,17 @@ func (ar *ActRunner) Execute(ctx *ExecutionContext) (*ExecutionResult, error) {
 		Logs:      []string{},
 		Artifacts: []string{},
 	}
+
+	// Recover from panics
+	defer func() {
+		if r := recover(); r != nil {
+			result.EndTime = time.Now()
+			result.Duration = result.EndTime.Sub(result.StartTime)
+			result.ExitCode = -1
+			result.Logs = append(result.Logs, fmt.Sprintf("PANIC: %v", r))
+			log.Printf("PANIC in Execute: %v", r)
+		}
+	}()
 
 	// Prepare event file
 	eventPath, err := ar.prepareEvent(ctx)
