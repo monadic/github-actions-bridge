@@ -14,6 +14,7 @@ This index provides a complete overview of all documentation for the GitHub Acti
 - **[SDK_VALIDATION.md](../SDK_VALIDATION.md)** - ConfigHub SDK dependency analysis
 - **[SDK_REQUESTS.md](../SDK_REQUESTS.md)** - Feature requests for ConfigHub SDK team
 - **[ENTERPRISE_FEATURES.md](../ENTERPRISE_FEATURES.md)** - Features deliberately delegated to ConfigHub SaaS
+- **[YAML_FORMATS.md](../YAML_FORMATS.md)** - YAML format specifications and validation
 
 ### Examples and Guides
 - **[examples/README.md](../examples/README.md)** - Detailed guide to all 17+ workflow examples
