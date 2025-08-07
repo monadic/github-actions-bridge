@@ -1,3 +1,7 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: worker-calls-claude
 name: Worker Calls Claude for Decisions
 on:
   workflow_dispatch:

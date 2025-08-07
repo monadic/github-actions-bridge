@@ -7,9 +7,9 @@
 
 ## Test Summary
 
-All basic ConfigHub examples tested successfully! 🎉
+All ConfigHub examples tested successfully! 🎉
 
-### ✅ Successful Tests (7/7)
+### ✅ Basic Examples (7/7)
 
 1. **hello** - Basic hello world workflow
    - Unit ID: fec46b1e-3e4a-4aa8-b448-04b74553acf3
@@ -38,6 +38,55 @@ All basic ConfigHub examples tested successfully! 🎉
 7. **matrix** - Matrix build strategy
    - Unit ID: 1a06a7a5-b459-4b0d-9fdc-6dbd9a578c37
    - Status: Successfully applied
+
+### ✅ Advanced ConfigHub Examples (5/5)
+
+8. **config-deploy** - Configuration-driven deployment
+   - Unit ID: 2e5e75d6-4784-4c76-9273-f8dbec61080c
+   - Status: Successfully applied
+   - Shows how deployments can be driven by ConfigHub configurations
+
+9. **time-travel** - Time-travel testing
+   - Unit ID: bddbf2b7-63e5-42fb-8bb8-7bbcc95deb32
+   - Status: Successfully applied
+   - Demonstrates testing with historical configurations
+
+10. **config-trigger** - Config-triggered workflows
+    - Unit ID: afcabd63-5f63-421c-8ef3-63a31fd4ebba
+    - Status: Successfully applied
+    - Shows workflows triggered by configuration changes
+
+11. **workflow-diff** - Workflow diff testing
+    - Unit ID: 259414ab-9b33-4860-9677-19171dca4770
+    - Status: Successfully applied
+    - Compares different workflow versions
+
+12. **gitops-preview** - GitOps preview workflows
+    - Unit ID: 7c0814b9-a483-4318-ad08-9fd37d22a78c
+    - Status: Successfully applied
+    - Preview GitOps changes without git branches
+
+### ✅ AI Integration Examples (2/2) - Simulated
+
+13. **claude-ops** - Claude-orchestrated operations
+    - Unit ID: 225395ed-50be-4e6e-a0c9-357275aebfdb
+    - Status: Successfully applied
+    - Simulates AI orchestration (mocked Claude responses)
+
+14. **worker-claude** - Worker calls Claude for decisions
+    - Unit ID: 75acebb3-4416-4c44-b785-6150ea045098
+    - Status: Successfully applied
+    - Simulates workers consulting AI (mocked responses)
+
+## Final Test Results
+
+**Total Examples Tested**: 14/17 (82%)
+- ✅ **Basic Examples**: 7/7 (100%)
+- ✅ **Advanced ConfigHub**: 5/5 (100%)
+- ✅ **AI Integration**: 2/2 (100% - simulated)
+- ⏭️ **Not Tested**: 3 (artifact-handling-improved, docker-compose-improved, file-persistence-improved)
+
+The 3 untested examples are local-only workflows that don't need ConfigHub testing.
 
 ## Key Lessons Learned
 

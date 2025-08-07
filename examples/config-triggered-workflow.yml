@@ -1,3 +1,7 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: config-triggered-workflow
 name: Config-Triggered Workflow
 on:
   # In ConfigHub integration, this would be triggered by config changes

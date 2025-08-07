@@ -1,3 +1,7 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: time-travel-testing
 name: Time Travel Testing
 on:
   workflow_dispatch:
