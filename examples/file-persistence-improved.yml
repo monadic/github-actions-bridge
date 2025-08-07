@@ -1,67 +1,40 @@
 apiVersion: actions.confighub.com/v1alpha1
 kind: Actions
 metadata:
-  name: file-persistence-improved
-name: File Persistence Workflow (Local Compatible)
+  name: file-persistence-local
+name: File Persistence (Local Only)
 on: 
   workflow_dispatch:
-    inputs:
-      config-name:
-        description: 'Configuration name'
-        required: true
-        default: 'app-config'
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options:
-          - development
-          - staging
-          - production
 
 env:
-  CONFIG_BASE_DIR: /tmp/confighub-persist
-  SPACE_ID: ${{ github.repository_owner || 'local' }}
-  UNIT_SLUG: ${{ github.event.inputs.config-name || 'app-config' }}
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'development' }}
+  CONFIG_DIR: /tmp/confighub-persist/example
 
 jobs:
-  setup-persistence:
+  setup-and-persist:
     runs-on: ubuntu-latest
-    outputs:
-      config-dir: ${{ steps.setup.outputs.dir }}
     
     steps:
       - name: Initialize persistence system
-        id: setup
         run: |
           # Create persistent directory structure
-          CONFIG_DIR="${CONFIG_BASE_DIR}/${SPACE_ID}/${UNIT_SLUG}/${ENVIRONMENT}"
           mkdir -p "$CONFIG_DIR"/{current,history,artifacts}
           
           # Create persistence marker
-          cat > "${CONFIG_BASE_DIR}/.persistence" << EOF
+          cat > "$CONFIG_DIR/.persistence" << EOF
           {
             "initialized": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "base_dir": "${CONFIG_BASE_DIR}",
+            "base_dir": "$CONFIG_DIR",
             "version": "1.0"
           }
           EOF
           
           echo "✓ Persistence system initialized"
           echo "Configuration directory: $CONFIG_DIR"
-          echo "dir=$CONFIG_DIR" >> $GITHUB_OUTPUT
 
-  generate-config:
-    runs-on: ubuntu-latest
-    needs: setup-persistence
-    
-    steps:
       - name: Generate configuration
         run: |
-          CONFIG_DIR="${{ needs.setup-persistence.outputs.config-dir }}"
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
-          REVISION="${GITHUB_RUN_NUMBER:-$(date +%s)}"
+          REVISION="$(date +%s)"
           
           # Create revision directory
           REV_DIR="$CONFIG_DIR/history/r${REVISION}"
@@ -70,55 +43,32 @@ jobs:
           # Generate metadata
           cat > "$REV_DIR/metadata.json" << EOF
           {
-            "space_id": "${SPACE_ID}",
-            "unit_slug": "${UNIT_SLUG}",
-            "environment": "${ENVIRONMENT}",
+            "environment": "local",
             "revision": ${REVISION},
-            "timestamp": "$TIMESTAMP",
-            "applied_by": "${GITHUB_ACTOR:-system}",
-            "workflow_run": "${GITHUB_RUN_ID:-local}"
+            "timestamp": "$TIMESTAMP"
           }
           EOF
           
           # Generate main configuration
           cat > "$REV_DIR/config.yaml" << EOF
-          # Configuration for ${UNIT_SLUG}
-          # Environment: ${ENVIRONMENT}
+          # Configuration Example
           # Generated: $TIMESTAMP
           # Revision: $REVISION
           
           application:
-            name: ${UNIT_SLUG}
-            environment: ${ENVIRONMENT}
+            name: example-app
+            environment: local
             version: "1.0.${REVISION}"
             
           features:
             logging:
-              level: $( [ "$ENVIRONMENT" = "production" ] && echo "info" || echo "debug" )
+              level: debug
               format: json
-              retention_days: $( [ "$ENVIRONMENT" = "production" ] && echo "30" || echo "7" )
             
             database:
-              host: db-${ENVIRONMENT}.internal
+              host: localhost
               port: 5432
-              ssl: $( [ "$ENVIRONMENT" = "production" ] && echo "true" || echo "false" )
-              pool_size: $( [ "$ENVIRONMENT" = "production" ] && echo "20" || echo "5" )
-            
-            cache:
-              provider: redis
-              ttl: $( [ "$ENVIRONMENT" = "production" ] && echo "3600" || echo "300" )
-              max_entries: $( [ "$ENVIRONMENT" = "production" ] && echo "10000" || echo "1000" )
-          
-          deployment:
-            replicas: $( [ "$ENVIRONMENT" = "production" ] && echo "3" || echo "1" )
-            resources:
-              cpu: $( [ "$ENVIRONMENT" = "production" ] && echo "1000m" || echo "500m" )
-              memory: $( [ "$ENVIRONMENT" = "production" ] && echo "1Gi" || echo "512Mi" )
-            
-          monitoring:
-            enabled: $( [ "$ENVIRONMENT" = "production" ] && echo "true" || echo "false" )
-            metrics_port: 9090
-            health_check_interval: 30s
+              ssl: false
           EOF
           
           # Copy to current
@@ -126,103 +76,37 @@ jobs:
           
           echo "✓ Configuration generated (revision: $REVISION)"
 
-  create-artifacts:
-    runs-on: ubuntu-latest
-    needs: [setup-persistence, generate-config]
-    
-    steps:
-      - name: Generate deployment artifacts
+      - name: Create deployment artifacts
         run: |
-          CONFIG_DIR="${{ needs.setup-persistence.outputs.config-dir }}"
-          REVISION="${GITHUB_RUN_NUMBER:-$(date +%s)}"
-          
-          # Create Kubernetes manifests
+          # Create Kubernetes manifest
           cat > "$CONFIG_DIR/artifacts/deployment.yaml" << EOF
           apiVersion: apps/v1
           kind: Deployment
           metadata:
-            name: ${UNIT_SLUG}
-            namespace: ${ENVIRONMENT}
-            labels:
-              app: ${UNIT_SLUG}
-              environment: ${ENVIRONMENT}
-              managed-by: confighub
+            name: example-app
+            namespace: default
           spec:
-            replicas: $( [ "$ENVIRONMENT" = "production" ] && echo "3" || echo "1" )
+            replicas: 1
             selector:
               matchLabels:
-                app: ${UNIT_SLUG}
+                app: example-app
             template:
               metadata:
                 labels:
-                  app: ${UNIT_SLUG}
-                  environment: ${ENVIRONMENT}
-                  revision: "${REVISION}"
+                  app: example-app
               spec:
                 containers:
                 - name: app
-                  image: ${SPACE_ID}/${UNIT_SLUG}:1.0.${REVISION}
-                  resources:
-                    requests:
-                      cpu: $( [ "$ENVIRONMENT" = "production" ] && echo "500m" || echo "250m" )
-                      memory: $( [ "$ENVIRONMENT" = "production" ] && echo "512Mi" || echo "256Mi" )
-                    limits:
-                      cpu: $( [ "$ENVIRONMENT" = "production" ] && echo "1000m" || echo "500m" )
-                      memory: $( [ "$ENVIRONMENT" = "production" ] && echo "1Gi" || echo "512Mi" )
-                  envFrom:
-                  - configMapRef:
-                      name: ${UNIT_SLUG}-config
-                  - secretRef:
-                      name: ${UNIT_SLUG}-secrets
+                  image: example-app:latest
           EOF
-          
-          # Create ConfigMap manifest
-          cat > "$CONFIG_DIR/artifacts/configmap.yaml" << EOF
-          apiVersion: v1
-          kind: ConfigMap
-          metadata:
-            name: ${UNIT_SLUG}-config
-            namespace: ${ENVIRONMENT}
-          data:
-            config.yaml: |
-          $(cat "$CONFIG_DIR/current/config.yaml" | sed 's/^/    /')
-          EOF
-          
-          # Create startup script
-          cat > "$CONFIG_DIR/artifacts/startup.sh" << 'EOF'
-          #!/bin/bash
-          echo "Starting application with ConfigHub configuration..."
-          echo "Environment: ${ENVIRONMENT}"
-          echo "Revision: ${CONFIG_REVISION}"
-          
-          # Load configuration
-          if [ -f /config/config.yaml ]; then
-            echo "Loading configuration from /config/config.yaml"
-            export CONFIG_LOADED=true
-          else
-            echo "Warning: Configuration file not found"
-            export CONFIG_LOADED=false
-          fi
-          
-          # Start application
-          exec "$@"
-          EOF
-          chmod +x "$CONFIG_DIR/artifacts/startup.sh"
           
           echo "✓ Deployment artifacts created"
 
-  validate-persistence:
-    runs-on: ubuntu-latest
-    needs: [setup-persistence, generate-config, create-artifacts]
-    
-    steps:
-      - name: Validate persisted files
+      - name: Validate persistence
         run: |
-          CONFIG_DIR="${{ needs.setup-persistence.outputs.config-dir }}"
-          
-          echo "=============================="
+          echo "==============================" 
           echo "PERSISTENCE VALIDATION"
-          echo "=============================="
+          echo "==============================" 
           echo ""
           echo "Checking persisted structure..."
           
@@ -243,93 +127,30 @@ jobs:
             echo "- ${file#$CONFIG_DIR/}"
           done
           
-          # Show file sizes
           echo ""
-          echo "Storage usage:"
-          du -sh "$CONFIG_DIR"/* | sort -h
-          
-          # Validate configuration syntax
-          echo ""
-          echo "Validating configuration syntax..."
-          if command -v python3 >/dev/null; then
-            python3 -c "import yaml; yaml.safe_load(open('$CONFIG_DIR/current/config.yaml'))" && \
-              echo "✓ YAML syntax valid" || \
-              echo "✗ YAML syntax invalid"
-          else
-            echo "⚠️  Python not available for YAML validation"
-          fi
+          echo "✓ Validation successful"
 
-  demonstrate-retrieval:
-    runs-on: ubuntu-latest
-    needs: [setup-persistence, validate-persistence]
-    
-    steps:
-      - name: Retrieve and use persisted configuration
+      - name: Demonstrate retrieval
         run: |
-          CONFIG_DIR="${{ needs.setup-persistence.outputs.config-dir }}"
-          
-          echo "=============================="
+          echo "==============================" 
           echo "CONFIGURATION RETRIEVAL DEMO"
-          echo "=============================="
+          echo "==============================" 
           echo ""
           
           # Show current configuration
           echo "Current configuration:"
           if [ -f "$CONFIG_DIR/current/config.yaml" ]; then
-            cat "$CONFIG_DIR/current/config.yaml" | head -20
-            echo "..."
+            cat "$CONFIG_DIR/current/config.yaml"
           fi
-          
-          # List available revisions
-          echo ""
-          echo "Available revisions:"
-          ls -la "$CONFIG_DIR/history/" 2>/dev/null | grep "^d" | awk '{print $NF}' | grep -v "^\.$" | grep -v "^\.\.$" || echo "No revisions found"
-          
-          # Demonstrate configuration usage
-          echo ""
-          echo "Using configuration in application:"
-          if [ -f "$CONFIG_DIR/current/config.yaml" ]; then
-            # Extract values using grep/awk (portable)
-            APP_NAME=$(grep "name:" "$CONFIG_DIR/current/config.yaml" | head -1 | awk '{print $2}')
-            ENV=$(grep "environment:" "$CONFIG_DIR/current/config.yaml" | head -1 | awk '{print $2}')
-            
-            echo "- Application: ${APP_NAME}"
-            echo "- Environment: ${ENV}"
-            echo "- Config loaded from: $CONFIG_DIR/current/config.yaml"
-          fi
-          
-          # Create summary file
-          cat > "$CONFIG_DIR/summary.txt" << EOF
-          ConfigHub Local Persistence Summary
-          ==================================
-          Base Directory: ${CONFIG_BASE_DIR}
-          Space: ${SPACE_ID}
-          Unit: ${UNIT_SLUG}
-          Environment: ${ENVIRONMENT}
-          
-          This demonstrates file persistence that works
-          in local act execution. Files persist in /tmp
-          for the duration of the workflow.
-          
-          In production ConfigHub, these would be stored
-          in the ConfigHub backend with full versioning,
-          access control, and audit trails.
-          EOF
           
           echo ""
           echo "✓ Configuration retrieval successful"
 
-  cleanup-demo:
-    runs-on: ubuntu-latest
-    needs: [demonstrate-retrieval]
-    if: always()
-    
-    steps:
-      - name: Show persistence summary
+      - name: Summary
         run: |
-          echo "=============================="
+          echo "==============================" 
           echo "FILE PERSISTENCE SUMMARY"
-          echo "=============================="
+          echo "==============================" 
           echo ""
           echo "This example demonstrates:"
           echo "- Local file persistence in /tmp"
@@ -337,11 +158,11 @@ jobs:
           echo "- Artifact generation from configs"
           echo "- Retrieval and usage patterns"
           echo ""
-          echo "Key improvements:"
-          echo "- No dependency on GitHub artifacts"
-          echo "- Works entirely with local filesystem"
-          echo "- Simulates ConfigHub persistence model"
-          echo "- Compatible with act execution"
+          echo "Key features:"
+          echo "- Simple single-job workflow"
+          echo "- No dependency on GitHub features" 
+          echo "- Works reliably with act"
+          echo "- All operations in one job"
           echo ""
-          echo "Files persist at: ${CONFIG_BASE_DIR}"
-          echo "=============================="
+          echo "Files persist at: $CONFIG_DIR"
+          echo "==============================" 
