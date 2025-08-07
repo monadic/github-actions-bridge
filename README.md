@@ -112,9 +112,28 @@ Same as local development, plus:
 # Install ConfigHub CLI
 curl -fsSL https://hub.confighub.com/cub/install.sh | bash
 
+# IMPORTANT: Add cub to your PATH
+# The installer places cub at ~/.confighub/bin/cub
+
+# For current session:
+export PATH="$HOME/.confighub/bin:$PATH"
+
+# For permanent installation, add to your shell profile:
+echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.zshrc  # For zsh (default on macOS)
+# OR
+echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.bashrc # For bash
+
+# Reload your shell configuration:
+source ~/.zshrc  # or source ~/.bashrc
+
 # Verify installation
 cub --version
 ```
+
+**Troubleshooting PATH Issues:**
+- If `cub: command not found`, the PATH isn't set correctly
+- Check installation location: `ls ~/.confighub/bin/cub`
+- Use full path if needed: `~/.confighub/bin/cub --version`
 
 ### Setup
 

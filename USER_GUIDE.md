@@ -76,8 +76,17 @@ act --version
 # Install ConfigHub CLI (includes the actions-bridge worker)
 curl -fsSL https://hub.confighub.com/cub/install.sh | bash
 
-# Add to PATH if needed
-sudo ln -sf ~/.confighub/bin/cub /usr/local/bin/cub
+# IMPORTANT: Add cub to your PATH
+# The installer places cub at ~/.confighub/bin/cub
+export PATH="$HOME/.confighub/bin:$PATH"
+
+# Make it permanent:
+echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.zshrc  # For macOS/zsh
+# OR
+echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.bashrc  # For Linux/bash
+
+# Reload your shell:
+source ~/.zshrc  # or source ~/.bashrc
 
 # Test it works
 cub --version
@@ -249,8 +258,8 @@ jobs:
           echo "Time: $(date)"
 EOF
 
-# Create the unit
-cub unit create hello hello-confighub.yml
+# Create the unit (MUST specify target!)
+cub unit create hello hello-confighub.yml --target docker-desktop
 
 # Run it!
 cub unit apply hello
@@ -337,7 +346,7 @@ Try more examples:
 cat EXAMPLES_COMPATIBILITY.md
 
 # Run a more complex example
-cub unit create build examples/build-test-deploy.yml
+cub unit create build examples/build-test-deploy.yml --target docker-desktop
 cub unit apply build
 ```
 
@@ -384,8 +393,8 @@ jobs:
 ### Step 2: Run the workflow
 
 ```bash
-# Create a ConfigHub unit for the workflow
-cub unit create --space default hello hello.yml
+# Create a ConfigHub unit for the workflow (MUST specify target!)
+cub unit create --space default hello hello.yml --target docker-desktop
 
 # Apply (run) the workflow
 cub unit apply --space default hello
@@ -463,7 +472,7 @@ jobs:
 3. **Run with secrets**:
 ```bash
 # Create unit and ConfigHub manages secrets
-cub unit create --space production deploy deploy.yml
+cub unit create --space production deploy deploy.yml --target docker-desktop
 cub unit apply --space production deploy
 ```
 
@@ -591,19 +600,19 @@ ConfigHub is a configuration management platform that:
 ```bash
 export CONFIGHUB_WORKER_ID=your-worker-id
 export CONFIGHUB_WORKER_SECRET=your-secret
-export CONFIGHUB_URL=https://api.confighub.com
+export CONFIGHUB_URL=https://hub.confighub.com  # IMPORTANT: Use hub, not api!
 ```
 
 3. **Run workflows with ConfigHub**:
 ```bash
 # Use configurations from ConfigHub
-cub unit create --space production webapp deploy.yml
+cub unit create --space production webapp deploy.yml --target docker-desktop
 cub unit apply --space production webapp
 
 # Test with different environments
-cub unit create --space staging webapp deploy.yml
+cub unit create --space staging webapp deploy.yml --target docker-desktop
 cub unit apply --space staging webapp
-cub unit create --space development webapp deploy.yml
+cub unit create --space development webapp deploy.yml --target docker-desktop
 cub unit apply --space development webapp
 ```
 
@@ -618,7 +627,7 @@ cub unit apply --space prod webapp --restore 1
 **Configuration-Driven Workflows:**
 ```bash
 # All values come from ConfigHub
-cub unit create --space production config-deploy examples/config-driven-deployment.yml
+cub unit create --space production config-deploy examples/config-driven-deployment.yml --target docker-desktop
 cub unit apply --space production config-deploy
 ```
 
@@ -638,7 +647,7 @@ DEBUG=true
 Run with environment:
 ```bash
 # Environment variables are managed through ConfigHub
-cub unit create --space dev myworkflow workflow.yml
+cub unit create --space dev myworkflow workflow.yml --target docker-desktop
 cub unit apply --space dev myworkflow
 ```
 
@@ -908,14 +917,14 @@ Check out our [17 example workflows](examples/) that demonstrate:
 
 ```bash
 # Essential commands you'll use daily
-cub unit create --space default myworkflow workflow.yml   # Create workflow unit
-cub unit apply --space default myworkflow                 # Run a workflow
-cub unit get --space default myworkflow --extended        # Check workflow details
-cub unit apply --space default myworkflow --debug         # Debug with verbose output
-cub help                                                  # See ConfigHub help
+cub unit create --space default myworkflow workflow.yml --target docker-desktop   # Create workflow unit
+cub unit apply --space default myworkflow                                        # Run a workflow
+cub unit get --space default myworkflow                                         # Check workflow details
+cub unit apply --space default myworkflow --debug                              # Debug with verbose output
+cub help                                                                       # See ConfigHub help
 
 # With different spaces
-cub unit create --space production webapp deploy.yml
+cub unit create --space production webapp deploy.yml --target docker-desktop
 cub unit apply --space production webapp
 cub unit apply --space production webapp --restore 1      # Use previous revision
 ```

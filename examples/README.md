@@ -142,14 +142,14 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 
 ```bash
 # Run a simple example
-cub unit create --space default hello examples/hello-world.yml
+cub unit create --space default hello examples/hello-world.yml --target docker-desktop
 cub unit apply --space default hello
 
 # Run with verbose output
 cub unit apply --space default hello --debug
 
 # Dry run to see what would happen
-cub unit create --space default hello examples/hello-world.yml --dry-run
+cub unit create --space default hello examples/hello-world.yml --target docker-desktop --dry-run
 ```
 
 ### With Secrets
@@ -160,7 +160,7 @@ echo "API_KEY=your-secret-key" > secrets.env
 echo "DATABASE_URL=postgres://localhost/db" >> secrets.env
 
 # Run workflow with ConfigHub managing secrets
-cub unit create --space default secrets-demo examples/with-secrets.yml
+cub unit create --space default secrets-demo examples/with-secrets.yml --target docker-desktop
 cub unit apply --space default secrets-demo
 # Secrets are securely managed by ConfigHub
 ```
@@ -169,15 +169,15 @@ cub unit apply --space default secrets-demo
 
 ```bash
 # Run with ConfigHub space and unit
-cub unit create --space production webapp examples/config-driven-deployment.yml
+cub unit create --space production webapp examples/config-driven-deployment.yml --target docker-desktop
 cub unit apply --space production webapp
 
 # Time travel testing
-cub unit create --space staging time-travel examples/time-travel-testing.yml
+cub unit create --space staging time-travel examples/time-travel-testing.yml --target docker-desktop
 cub unit apply --space staging time-travel --restore 1
 
 # Preview GitOps changes
-cub unit create --space production gitops examples/gitops-preview-improved.yml
+cub unit create --space production gitops examples/gitops-preview-improved.yml --target docker-desktop
 cub unit get --space production gitops --extended
 # Use ConfigHub's space management for GitOps workflows
 ```
@@ -190,7 +190,7 @@ cub revision list --space production --where "UnitSlug = 'workflow-diff'"
 cub revision diff --space production workflow-diff --from 1 --to 2
 
 # Test config-triggered workflows
-cub unit create --space production config-trigger examples/config-triggered-workflow.yml
+cub unit create --space production config-trigger examples/config-triggered-workflow.yml --target docker-desktop
 cub trigger create --space production config-change \
   --unit config-trigger \
   --event "config.changed"
@@ -200,7 +200,7 @@ cub trigger create --space production config-change \
 
 ```bash
 # Claude orchestrates operations
-cub unit create --space production claude-ops examples/claude-orchestrated-ops.yml
+cub unit create --space production claude-ops examples/claude-orchestrated-ops.yml --target docker-desktop
 # Set the operation request in ConfigHub
 cub unit set --space production claude-ops \
   --key operation-request \
@@ -208,7 +208,7 @@ cub unit set --space production claude-ops \
 cub unit apply --space production claude-ops
 
 # Worker asks Claude for deployment advice
-cub unit create --space production claude-worker examples/worker-calls-claude.yml
+cub unit create --space production claude-worker examples/worker-calls-claude.yml --target docker-desktop
 cub unit set --space production claude-worker \
   --key deployment-stage --value production \
   --key anomaly-type --value high-error-rate
@@ -219,7 +219,7 @@ cub unit apply --space production claude-worker
 
 1. **Validate First**: Always validate your workflow before running:
    ```bash
-   cub unit create --space default test examples/your-workflow.yml --dry-run
+   cub unit create --space default test examples/your-workflow.yml --target docker-desktop --dry-run
    ```
 
 2. **Check Limitations**: Some GitHub Actions features don't work locally:
@@ -235,15 +235,15 @@ cub unit apply --space production claude-worker
 
 4. **Test with Different Configs**: Use ConfigHub spaces to test with various configurations:
    ```bash
-   cub unit create --space staging deploy examples/config-driven-deployment.yml
-   cub unit create --space production deploy examples/config-driven-deployment.yml
+   cub unit create --space staging deploy examples/config-driven-deployment.yml --target docker-desktop
+   cub unit create --space production deploy examples/config-driven-deployment.yml --target docker-desktop
    cub unit apply --space staging deploy
    cub unit apply --space production deploy
    ```
 
 5. **Preview Changes**: Always preview before applying:
    ```bash
-   cub unit create --space default preview examples/gitops-preview-improved.yml --dry-run
+   cub unit create --space default preview examples/gitops-preview-improved.yml --target docker-desktop --dry-run
    cub unit get --space default preview --extended
    ```
 

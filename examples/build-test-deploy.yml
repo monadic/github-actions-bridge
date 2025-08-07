@@ -1,3 +1,7 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: build-test-deploy
 name: CI/CD Pipeline
 on:
   push:

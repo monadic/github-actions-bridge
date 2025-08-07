@@ -1,3 +1,7 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: conditional-execution
 name: Conditional Execution
 on:
   push:
