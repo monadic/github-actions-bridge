@@ -1,6 +1,6 @@
 # GitHub Actions Bridge - User Guide
 
-[← Back to README](README.md) | [Examples →](examples/) | [API Reference](README.md#cli-reference)
+[← Back to README](README.md) | [Examples →](examples/) | [CLI Reference →](CLI_REFERENCE.md)
 
 ---
 

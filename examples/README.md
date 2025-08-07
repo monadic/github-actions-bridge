@@ -6,6 +6,13 @@
 
 This directory contains 17 example workflows that demonstrate various features of the GitHub Actions Bridge. Each example includes a problem it solves and when to use it.
 
+## 🚀 Which Tool Should I Use?
+
+**Not sure which examples work with which tool?** → Check our [Examples Compatibility Guide](../EXAMPLES_COMPATIBILITY.md)
+
+- **For local testing**: Use `./bin/cub-local-actions run <example.yml>`
+- **For ConfigHub**: Use `cub unit create` and `cub unit apply`
+
 ## Quick Start
 
 If you're new here, start with these examples in order:
@@ -27,16 +34,16 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 5. **[build-test-deploy.yml](build-test-deploy.yml)** - Complete CI/CD pipeline example
 6. **[matrix-builds.yml](matrix-builds.yml)** - Demonstrates matrix strategy for testing multiple versions
 7. **[conditional-execution.yml](conditional-execution.yml)** - Shows conditional logic and expressions
-8. **[artifact-handling.yml](artifact-handling.yml)** - Working with artifacts
-9. **[docker-compose.yml](docker-compose.yml)** - Integration with Docker Compose
-10. **[file-persistence.yml](file-persistence.yml)** - Persistent file handling between workflow runs
+8. **[artifact-handling-improved.yml](artifact-handling-improved.yml)** - Working with artifacts (local-compatible version)
+9. **[docker-compose-improved.yml](docker-compose-improved.yml)** - Integration with Docker Compose
+10. **[file-persistence-improved.yml](file-persistence-improved.yml)** - Persistent file handling between workflow runs
 
 ### ConfigHub Integration Examples
 11. **[config-driven-deployment.yml](config-driven-deployment.yml)** - Deploy using ConfigHub configurations
 12. **[time-travel-testing.yml](time-travel-testing.yml)** - Test workflows with historical configurations
 13. **[config-triggered-workflow.yml](config-triggered-workflow.yml)** - Workflows triggered by configuration changes
 14. **[workflow-diff-testing.yml](workflow-diff-testing.yml)** - Compare different workflow versions
-15. **[gitops-preview.yml](gitops-preview.yml)** - Preview GitOps changes without GitHub
+15. **[gitops-preview-improved.yml](gitops-preview-improved.yml)** - Preview GitOps changes without GitHub
 
 ### AI Integration Examples
 16. **[claude-orchestrated-ops.yml](claude-orchestrated-ops.yml)** - Claude orchestrates operations using ConfigHub
@@ -79,17 +86,17 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 **Solution:** Test different execution paths by simulating various conditions locally.  
 **Use When:** Building workflows with branching logic based on events, inputs, or repository state.
 
-### 8. artifact-handling.yml
+### 8. artifact-handling-improved.yml
 **Problem:** Artifacts in GitHub Actions are not easily accessible in local testing.  
 **Solution:** Shows how the bridge handles artifact creation, upload, and download locally.  
 **Use When:** Workflows that build binaries, generate reports, or pass data between jobs via artifacts.
 
-### 9. docker-compose.yml
+### 9. docker-compose-improved.yml
 **Problem:** Testing workflows that require multiple services (databases, caches) is complex.  
 **Solution:** Demonstrates integration with Docker Compose for realistic local testing environments.  
 **Use When:** Testing applications that require PostgreSQL, Redis, or other services.
 
-### 10. file-persistence.yml
+### 10. file-persistence-improved.yml
 **Problem:** Workflows that generate configuration files need persistent storage between runs.  
 **Solution:** Shows how to persist files across workflow executions, mimicking the custom-bridge pattern.  
 **Use When:** Building workflows that maintain state or generate incremental configurations.
@@ -114,7 +121,7 @@ Then explore the advanced ConfigHub integration examples for powerful features l
 **Solution:** Compare workflow versions side-by-side, seeing exactly what would change in behavior, timing, and resources.  
 **Use When:** Modifying critical workflows, adding new features, or evaluating workflow optimization proposals.
 
-### 15. gitops-preview.yml
+### 15. gitops-preview-improved.yml
 **Problem:** GitOps typically requires git branches and pull requests, adding complexity and delay.  
 **Solution:** Preview and apply GitOps changes using ConfigHub spaces as logical environments, no git branches needed.  
 **Use When:** Implementing GitOps workflows, promoting configurations between environments, or syncing spaces.
@@ -170,7 +177,7 @@ cub unit create --space staging time-travel examples/time-travel-testing.yml
 cub unit apply --space staging time-travel --restore 1
 
 # Preview GitOps changes
-cub unit create --space production gitops examples/gitops-preview.yml
+cub unit create --space production gitops examples/gitops-preview-improved.yml
 cub unit get --space production gitops --extended
 # Use ConfigHub's space management for GitOps workflows
 ```
@@ -236,7 +243,7 @@ cub unit apply --space production claude-worker
 
 5. **Preview Changes**: Always preview before applying:
    ```bash
-   cub unit create --space default preview examples/gitops-preview.yml --dry-run
+   cub unit create --space default preview examples/gitops-preview-improved.yml --dry-run
    cub unit get --space default preview --extended
    ```
 

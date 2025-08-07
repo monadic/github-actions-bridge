@@ -2,6 +2,13 @@
 
 **Run GitHub Actions workflows locally or through ConfigHub's configuration management platform.**
 
+## 📍 Quick Navigation
+
+**New to the project?** → Start with our [🚀 Quick Start Guide](USER_GUIDE.md#-quick-start---choose-your-path)  
+**Want to see examples?** → Browse [📂 Examples](examples/) with [compatibility guide](EXAMPLES_COMPATIBILITY.md)  
+**Need help?** → Check the [📖 User Guide](USER_GUIDE.md) or [🔧 CLI Reference](CLI_REFERENCE.md)  
+**Having issues?** → See [🔍 Troubleshooting](USER_GUIDE.md#troubleshooting)
+
 ## 🔍 Two Ways to Use This Project
 
 This project provides two distinct workflows for running GitHub Actions:
@@ -80,9 +87,12 @@ make build
 ./bin/cub-local-actions run workflow.yml --watch
 ```
 
-### Local Examples
+**What to try first?**
+1. Start with `hello-world.yml` - it always works
+2. Then try `multi-job.yml` or `build-test-deploy.yml`
+3. Check [Examples Compatibility Guide](EXAMPLES_COMPATIBILITY.md) to see which examples work locally
 
-See which examples work locally in our [Examples Compatibility Guide](EXAMPLES_COMPATIBILITY.md).
+**💡 Tip**: If you're new, follow our [step-by-step Quick Start](USER_GUIDE.md#local-testing-quickstart) instead.
 
 ---
 
