@@ -122,6 +122,8 @@ This guide will help you run your first GitHub Actions workflow. We'll start wit
 
 ## ConfigHub Workflow Setup
 
+**📖 For a complete step-by-step guide with troubleshooting, see [CONFIGHUB_SETUP_GUIDE.md](CONFIGHUB_SETUP_GUIDE.md)**
+
 ### Step 1: Verify Your Tools
 
 First, let's make sure you have everything needed:

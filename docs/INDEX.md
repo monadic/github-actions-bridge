@@ -7,6 +7,7 @@ This index provides a complete overview of all documentation for the GitHub Acti
 ### Core Documentation
 - **[README.md](../README.md)** - Project overview, quick start, and examples
 - **[USER_GUIDE.md](../USER_GUIDE.md)** - Comprehensive user guide and tutorials
+- **[CONFIGHUB_SETUP_GUIDE.md](../CONFIGHUB_SETUP_GUIDE.md)** - Step-by-step ConfigHub setup with troubleshooting
 - **[CLI_REFERENCE.md](../CLI_REFERENCE.md)** - Complete CLI command reference
 
 ### Technical Documentation
@@ -19,6 +20,8 @@ This index provides a complete overview of all documentation for the GitHub Acti
 ### Examples and Guides
 - **[examples/README.md](../examples/README.md)** - Detailed guide to all 17 workflow examples
 - **[examples/](../examples/)** - Actual workflow files with comments
+- **[EXAMPLES_COMPATIBILITY.md](../EXAMPLES_COMPATIBILITY.md)** - Which examples work with which tool
+- **[CONFIGHUB_TEST_RESULTS.md](../CONFIGHUB_TEST_RESULTS.md)** - Real test results from ConfigHub testing
 
 ### Configuration Files
 - **[docker-compose.yml](../docker-compose.yml)** - Default Docker deployment (with security warnings)
@@ -57,8 +60,9 @@ GitHub Issues → SDK_REQUESTS.md
 1. **[README.md](../README.md)** - Understand what the project does
 2. **[examples/hello-world.yml](../examples/hello-world.yml)** - See a simple example
 3. **[USER_GUIDE.md](../USER_GUIDE.md)** - Learn how to use it
-4. **[SECURITY.md](../SECURITY.md)** - Understand security implications
-5. **[ENTERPRISE_FEATURES.md](../ENTERPRISE_FEATURES.md)** - Learn about advanced features
+4. **[CONFIGHUB_SETUP_GUIDE.md](../CONFIGHUB_SETUP_GUIDE.md)** - Set up ConfigHub step-by-step
+5. **[SECURITY.md](../SECURITY.md)** - Understand security implications
+6. **[ENTERPRISE_FEATURES.md](../ENTERPRISE_FEATURES.md)** - Learn about advanced features
 
 ## 🔍 Finding Specific Information
 
@@ -83,8 +87,10 @@ GitHub Issues → SDK_REQUESTS.md
 
 | Document | Purpose | Status | Last Updated |
 |----------|---------|--------|--------------|
-| README.md | Project overview | ✅ Complete | Current |
-| USER_GUIDE.md | User tutorials | ✅ Complete | Current |
+| README.md | Project overview | ✅ Complete | August 2025 |
+| USER_GUIDE.md | User tutorials | ✅ Complete | August 2025 |
+| CONFIGHUB_SETUP_GUIDE.md | ConfigHub setup | ✅ Complete | August 2025 |
+| CONFIGHUB_TEST_RESULTS.md | Test results | ✅ Complete | August 2025 |
 | SECURITY.md | Security guide | ✅ Complete | Current |
 | ENTERPRISE_FEATURES.md | Feature delegation | ✅ Complete | Current |
 | SDK_VALIDATION.md | SDK analysis | ✅ Complete | Current |

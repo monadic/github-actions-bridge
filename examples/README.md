@@ -13,6 +13,17 @@ This directory contains 17 example workflows that demonstrate various features o
 - **For local testing**: Use `./bin/cub-local-actions run <example.yml>`
 - **For ConfigHub**: Use `cub unit create` and `cub unit apply`
 
+### ⚠️ Important: ConfigHub Headers Required
+
+All examples now include the required ConfigHub headers:
+```yaml
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: example-name
+```
+These headers are automatically stripped when running locally with `cub-local-actions`.
+
 ## Quick Start
 
 If you're new here, start with these examples in order:

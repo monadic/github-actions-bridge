@@ -64,6 +64,8 @@ ls -la pkg/bridge/
    - `/Users/alexisrichardson/github-actions-bridge/README.md` - Project overview and setup
    - `/Users/alexisrichardson/github-actions-bridge/go.mod` - Dependencies (IMPORTANT: Note the ConfigHub SDK pseudo-version)
    - `/Users/alexisrichardson/github-actions-bridge/USER_GUIDE.md` - Detailed usage guide
+   - `/Users/alexisrichardson/github-actions-bridge/CONFIGHUB_SETUP_GUIDE.md` - Step-by-step ConfigHub setup (NEW!)
+   - `/Users/alexisrichardson/github-actions-bridge/CONFIGHUB_TEST_RESULTS.md` - Real test results with learnings
    - `/Users/alexisrichardson/github-actions-bridge/SECURITY.md` - Security considerations
 
 2. **Core Implementation**
@@ -188,6 +190,22 @@ make docker    # Build Docker image
 5. **File Paths**
    - All file paths in tool calls should be absolute (start with /)
    - The working directory is `/Users/alexisrichardson/github-actions-bridge`
+
+6. **PATH Issue for cub CLI**
+   - The cub installer places the binary at `~/.confighub/bin/cub`
+   - This is NOT in PATH by default
+   - Users must add: `export PATH="$HOME/.confighub/bin:$PATH"`
+   - See CONFIGHUB_SETUP_GUIDE.md for details
+
+7. **ConfigHub URL**
+   - MUST use `https://hub.confighub.com` (NOT api.confighub.com)
+   - Wrong URL causes "no such host" errors
+   - This is a common mistake in documentation
+
+8. **Target Requirement**
+   - ALL `cub unit create` commands MUST include `--target docker-desktop`
+   - Without target: "cannot invoke action on a unit without a target" error
+   - This is not well documented in ConfigHub's main docs
 
 ## Quick Verification Checklist
 
