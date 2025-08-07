@@ -46,6 +46,29 @@ func NewActRunner(platform, containerImage string) *ActRunner {
 	}
 }
 
+// getContainerOptions returns container options including volume mounts
+func (ar *ActRunner) getContainerOptions() string {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		// If we can't get home dir, return empty options
+		return ""
+	}
+
+	// Mount ~/.confighub to container's root and runner home directories
+	// This ensures it's available regardless of which user runs the workflow
+	// Act containers typically run as root, but we mount to both locations for compatibility
+	confighubPath := filepath.Join(homeDir, ".confighub")
+
+	// Check if .confighub directory exists
+	if _, err := os.Stat(confighubPath); os.IsNotExist(err) {
+		// No .confighub directory, no need to mount
+		return ""
+	}
+
+	// Mount to both /root/.confighub and /home/runner/.confighub for compatibility
+	return fmt.Sprintf("-v %s:/root/.confighub:ro -v %s:/home/runner/.confighub:ro", confighubPath, confighubPath)
+}
+
 // Validate checks if a GitHub Actions workflow is valid
 func (ar *ActRunner) Validate(workflowData []byte) error {
 	// Parse workflow
@@ -134,6 +157,7 @@ func (ar *ActRunner) Execute(ctx *ExecutionContext) (*ExecutionResult, error) {
 		Actor:              "confighub",
 		InsecureSecrets:    false,
 		LogOutput:          true,
+		ContainerOptions:   ar.getContainerOptions(),
 	}
 
 	// Create runner
