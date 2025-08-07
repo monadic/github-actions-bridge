@@ -8,7 +8,12 @@ on: [push, workflow_dispatch]
 env:
   SPACE: actions-cert-manager
   HELM_CHART_VERSION: v1.17.1
+  TARGET_SLUG: ck-kind-kind-kind
   VALUES: |
+    # Enable CRDs
+    crds:
+      enabled: true
+
     # Number of replicas for the main cert-manager controller.
     replicaCount: 1
     
@@ -81,6 +86,10 @@ jobs:
 
       - name: Add cert-manager Helm repository
         run: |
+          echo "Installing Helm..."
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+          helm version
+
           helm repo add jetstack https://charts.jetstack.io
           helm repo update
 
@@ -113,6 +122,18 @@ jobs:
             --values /tmp/cert-manager-values.yaml \
             --version "$HELM_CHART_VERSION"
 
+      - name: Set cluster targets (once after create)
+        if: steps.check-cert-manager.outputs.exists == 'false'
+        run: |
+          cub unit set-target --space "$SPACE" \
+            cert-manager-crds $TARGET_SLUG
+
+          cub unit set-target --space "$SPACE" \
+            cert-manager-ns $TARGET_SLUG
+
+          cub unit set-target --space "$SPACE" \
+            cert-manager $TARGET_SLUG
+
       - name: Upgrade cert-manager with cub helm
         if: steps.check-cert-manager.outputs.exists == 'true'
         run: |
@@ -134,12 +155,11 @@ jobs:
       - name: Apply to deploy cert-manager
         run: |
           # TODO use bulk apply after it's implemented
+          cub unit apply --space "$SPACE" \
+            cert-manager-crds
 
           cub unit apply --space "$SPACE" \
-            apply cert-manager-crds
+            cert-manager-ns
 
           cub unit apply --space "$SPACE" \
-            apply cert-manager-ns
-
-          cub unit apply --space "$SPACE" \
-            apply cert-manager
+            cert-manager
