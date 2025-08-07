@@ -1,0 +1,72 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: cub-hello-world
+name: Hello World
+on: [push, workflow_dispatch]
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: echo "Hello from GitHub Actions Bridge!"
+      
+      - name: Show date
+        run: date
+      
+      - name: Detect architecture and download cub
+        run: |
+          ARCH=$(uname -m)
+          echo "Detected architecture: $ARCH"
+          
+          if [ "$ARCH" = "x86_64" ]; then
+            CUB_ARCH="amd64"
+          elif [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
+            CUB_ARCH="arm64"
+          else
+            echo "Unsupported architecture: $ARCH"
+            exit 1
+          fi
+          
+          echo "Downloading cub-linux-$CUB_ARCH..."
+          curl -L "https://github.com/chanwit/sdk/releases/download/v0.0.0-cb4781e/cub-linux-$CUB_ARCH" \
+            -o /tmp/cub
+          chmod +x /tmp/cub
+          
+          # Verify download
+          /tmp/cub --version || echo "cub downloaded but may need initialization"
+      
+      - name: Test cub context
+        run: |
+          # Test if .confighub is mounted and accessible
+          if [ -d "$HOME/.confighub" ]; then
+            echo "✅ .confighub directory is mounted"
+            ls -la $HOME/.confighub/ || true
+            
+            # Show current ConfigHub context and login information
+            echo ""
+            echo "ConfigHub Context Information:"
+            echo "=============================="
+            /tmp/cub context get || echo "Note: cub may need authentication"
+            
+            # Also try to show available spaces if logged in
+            echo ""
+            echo "Available Spaces:"
+            echo "================="
+            /tmp/cub space list 2>/dev/null || echo "Cannot list spaces - may need authentication"
+          else
+            echo "⚠️  .confighub directory not found - cub commands may not work"
+            echo "Please ensure you have run 'cub auth login' on the host system"
+          fi
+      
+      - name: List files
+        run: ls -la
+      
+      - name: System info
+        run: |
+          echo "Runner OS: $RUNNER_OS"
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "HOME: $HOME"
+          echo "USER: $(whoami)"
+          uname -a
