@@ -25,7 +25,7 @@ var (
 
 func main() {
 	var rootCmd = &cobra.Command{
-		Use:   "cub-worker-actions",
+		Use:   "cub-local-actions",
 		Short: "Worker for GitHub Actions Bridge",
 		Long: `A ConfigHub worker that runs GitHub Actions workflows locally 
 using the Actions Bridge. This worker integrates with ConfigHub to execute 
@@ -370,7 +370,7 @@ func versionCommand() *cobra.Command {
 		Use:   "version",
 		Short: "Show version information",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Printf("cub-worker-actions version %s\n", Version)
+			fmt.Printf("cub-local-actions version %s\n", Version)
 			fmt.Println("GitHub Actions Bridge Worker")
 			fmt.Println("https://github.com/confighub/actions-bridge")
 		},

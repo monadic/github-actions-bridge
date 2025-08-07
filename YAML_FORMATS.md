@@ -128,15 +128,15 @@ with:
 ## Toolchain Compatibility
 
 1. **ConfigHub CLI** (`cub`): Expects ConfigHub metadata
-2. **Bridge CLI** (`cub-worker-actions`): Strips metadata automatically
+2. **Bridge CLI** (`cub-local-actions`): Strips metadata automatically
 3. **act**: Requires standard GitHub Actions format (after stripping)
 4. **Docker Compose**: Both files compatible with v2/v3
 
 ## Best Practices
 
 1. **Always include ConfigHub headers** in examples
-2. **Validate with** `cub-worker-actions validate <file>`
-3. **Test locally with** `cub-worker-actions run <file>`
+2. **Validate with** `cub-local-actions validate <file>`
+3. **Test locally with** `cub-local-actions run <file>`
 4. **Use docker-compose.secure.yml** for production
 
 ## Related Documentation

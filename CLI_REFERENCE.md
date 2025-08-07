@@ -1,4 +1,4 @@
-# CLI Reference - cub-worker-actions
+# CLI Reference - cub-local-actions
 
 Complete command-line interface documentation for the GitHub Actions Bridge worker CLI.
 
@@ -9,7 +9,7 @@ Complete command-line interface documentation for the GitHub Actions Bridge work
 make build-worker
 
 # Binary will be available at
-./bin/cub-worker-actions
+./bin/cub-local-actions
 ```
 
 ## Global Options
@@ -27,7 +27,7 @@ These options work with all commands:
 Run a GitHub Actions workflow locally using act.
 
 ```bash
-cub-worker-actions run WORKFLOW [flags]
+cub-local-actions run WORKFLOW [flags]
 ```
 
 **Arguments:**
@@ -51,22 +51,22 @@ cub-worker-actions run WORKFLOW [flags]
 
 ```bash
 # Basic execution
-cub-worker-actions run examples/hello-world.yml
+cub-local-actions run examples/hello-world.yml
 
 # With secrets
-cub-worker-actions run examples/with-secrets.yml --secrets-file secrets.env
+cub-local-actions run examples/with-secrets.yml --secrets-file secrets.env
 
 # With inputs
-cub-worker-actions run examples/build.yml -i version=1.2.3 -i environment=prod
+cub-local-actions run examples/build.yml -i version=1.2.3 -i environment=prod
 
 # Dry run to see what would execute
-cub-worker-actions run examples/deploy.yml --dry-run
+cub-local-actions run examples/deploy.yml --dry-run
 
 # Watch mode for development
-cub-worker-actions run examples/test.yml --watch
+cub-local-actions run examples/test.yml --watch
 
 # With custom timeout
-cub-worker-actions run examples/long-running.yml --timeout 7200
+cub-local-actions run examples/long-running.yml --timeout 7200
 ```
 
 ### `validate` - Validate a workflow
@@ -74,7 +74,7 @@ cub-worker-actions run examples/long-running.yml --timeout 7200
 Check if a workflow is valid and can be executed locally with act.
 
 ```bash
-cub-worker-actions validate WORKFLOW [flags]
+cub-local-actions validate WORKFLOW [flags]
 ```
 
 **Arguments:**
@@ -84,10 +84,10 @@ cub-worker-actions validate WORKFLOW [flags]
 
 ```bash
 # Validate a single workflow
-cub-worker-actions validate examples/hello-world.yml
+cub-local-actions validate examples/hello-world.yml
 
 # Validate with verbose output
-cub-worker-actions validate examples/complex-workflow.yml -v
+cub-local-actions validate examples/complex-workflow.yml -v
 ```
 
 **Output:**
@@ -100,7 +100,7 @@ cub-worker-actions validate examples/complex-workflow.yml -v
 Display all known limitations when running GitHub Actions locally with act.
 
 ```bash
-cub-worker-actions list-limitations
+cub-local-actions list-limitations
 ```
 
 **Output:**
@@ -115,7 +115,7 @@ Lists limitations such as:
 Clean up temporary files and Docker resources created by the bridge.
 
 ```bash
-cub-worker-actions clean [flags]
+cub-local-actions clean [flags]
 ```
 
 **Flags:**
@@ -126,13 +126,13 @@ cub-worker-actions clean [flags]
 
 ```bash
 # Clean temporary files
-cub-worker-actions clean
+cub-local-actions clean
 
 # Clean everything including Docker containers
-cub-worker-actions clean --all
+cub-local-actions clean --all
 
 # Preview what would be cleaned
-cub-worker-actions clean --dry-run
+cub-local-actions clean --dry-run
 ```
 
 ### `version` - Show version
@@ -140,7 +140,7 @@ cub-worker-actions clean --dry-run
 Display version information for the CLI and its components.
 
 ```bash
-cub-worker-actions version
+cub-local-actions version
 ```
 
 **Output:**
@@ -156,20 +156,20 @@ Built with:
 Generate shell completion scripts for various shells.
 
 ```bash
-cub-worker-actions completion [bash|zsh|fish|powershell]
+cub-local-actions completion [bash|zsh|fish|powershell]
 ```
 
 **Examples:**
 
 ```bash
 # Bash
-cub-worker-actions completion bash > ~/.bash_completion.d/cub-worker-actions
+cub-local-actions completion bash > ~/.bash_completion.d/cub-local-actions
 
 # Zsh
-cub-worker-actions completion zsh > ~/.zsh/completions/_cub-worker-actions
+cub-local-actions completion zsh > ~/.zsh/completions/_cub-local-actions
 
 # Fish
-cub-worker-actions completion fish > ~/.config/fish/completions/cub-worker-actions.fish
+cub-local-actions completion fish > ~/.config/fish/completions/cub-local-actions.fish
 ```
 
 ## Environment Variables
@@ -253,20 +253,20 @@ The CLI automatically strips the first 4 lines of metadata.
 
 ```bash
 # Validate your workflow
-cub-worker-actions validate my-workflow.yml
+cub-local-actions validate my-workflow.yml
 
 # Run with watch mode for rapid iteration
-cub-worker-actions run my-workflow.yml --watch
+cub-local-actions run my-workflow.yml --watch
 
 # Clean up when done
-cub-worker-actions clean
+cub-local-actions clean
 ```
 
 ### CI/CD Pipeline Testing
 
 ```bash
 # Test with production-like secrets
-cub-worker-actions run deploy.yml \
+cub-local-actions run deploy.yml \
   --secrets-file prod-secrets.env \
   --env-file prod-env.env \
   -i environment=production \
@@ -277,10 +277,10 @@ cub-worker-actions run deploy.yml \
 
 ```bash
 # Verbose output for troubleshooting
-cub-worker-actions run problematic-workflow.yml -v
+cub-local-actions run problematic-workflow.yml -v
 
 # Dry run to see execution plan
-cub-worker-actions run complex-workflow.yml --dry-run
+cub-local-actions run complex-workflow.yml --dry-run
 ```
 
 ## Related Documentation
@@ -294,13 +294,13 @@ cub-worker-actions run complex-workflow.yml --dry-run
 
 ```bash
 # General help
-cub-worker-actions --help
+cub-local-actions --help
 
 # Command-specific help
-cub-worker-actions run --help
+cub-local-actions run --help
 
 # List known limitations
-cub-worker-actions list-limitations
+cub-local-actions list-limitations
 ```
 
 For bugs or feature requests, visit: https://github.com/confighub/actions-bridge/issues

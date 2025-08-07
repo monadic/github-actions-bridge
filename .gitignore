@@ -8,7 +8,7 @@
 # Built binaries
 bin/
 actions-bridge
-cub-worker-actions
+cub-local-actions
 act-test
 
 # Test binary, built with `go test -c`

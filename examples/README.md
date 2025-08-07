@@ -4,7 +4,7 @@
 
 ---
 
-This directory contains 15+ example workflows that demonstrate various features of the GitHub Actions Bridge. Each example includes a problem it solves and when to use it.
+This directory contains 17 example workflows that demonstrate various features of the GitHub Actions Bridge. Each example includes a problem it solves and when to use it.
 
 ## Quick Start
 

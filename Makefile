@@ -2,7 +2,7 @@
 
 # Variables
 BINARY_NAME=actions-bridge
-WORKER_NAME=cub-worker-actions
+WORKER_NAME=cub-local-actions
 GO=go
 GOFLAGS=-v
 DOCKER_IMAGE=confighub/actions-bridge

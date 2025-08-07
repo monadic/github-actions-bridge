@@ -10,12 +10,14 @@ Welcome! This guide will walk you through using the GitHub Actions Bridge step b
 1. [Understanding the Problem](#understanding-the-problem)
 2. [Prerequisites](#prerequisites)
 3. [Installation](#installation)
-4. [Your First Workflow](#your-first-workflow)
-5. [Working with Secrets](#working-with-secrets)
-6. [ConfigHub Integration](#confighub-integration)
-7. [Common Use Cases](#common-use-cases)
-8. [Troubleshooting](#troubleshooting)
-9. [Next Steps](#next-steps)
+4. [🚀 Quick Start - Choose Your Path](#-quick-start---choose-your-path)
+5. [Your First Workflow](#your-first-workflow)
+6. [Working with Secrets](#working-with-secrets)
+7. [Local Development Workflow](#local-development-workflow)
+8. [ConfigHub Integration](#confighub-integration)
+9. [Common Use Cases](#common-use-cases)
+10. [Troubleshooting](#troubleshooting)
+11. [Next Steps](#next-steps)
 
 ## Understanding the Problem
 
@@ -98,9 +100,264 @@ make build
 ./bin/actions-bridge --version
 ```
 
+## 🚀 Quick Start - Choose Your Path
+
+This guide will help you run your first GitHub Actions workflow. We'll start with ConfigHub (if you have an account) or jump straight to local execution.
+
+### Decision Point: Do You Have a ConfigHub Account?
+
+**Option A: Yes, I have a ConfigHub account** → Continue to [ConfigHub Workflow](#confighub-workflow-setup)  
+**Option B: No, I want to test locally first** → Skip to [Local Testing](#local-testing-quickstart)
+
+---
+
+## ConfigHub Workflow Setup
+
+### Step 1: Verify Your Tools
+
+First, let's make sure you have everything needed:
+
+```bash
+# Check if cub is installed
+cub --version
+```
+
+**Did it work?**
+- ✅ **Yes** → Continue to Step 2
+- ❌ **No** → Install cub first:
+  ```bash
+  curl -fsSL https://hub.confighub.com/cub/install.sh | bash
+  # Add to PATH if needed
+  sudo ln -sf ~/.confighub/bin/cub /usr/local/bin/cub
+  ```
+
+### Step 2: Log In to ConfigHub
+
+```bash
+# This opens your browser for authentication
+cub auth login
+```
+
+**Verification**: Check you're logged in:
+```bash
+cub context get
+```
+
+You should see something like:
+```
+Organization: your-org
+Space: default
+User: you@example.com
+```
+
+**Troubleshooting**:
+- No organization shown? → Contact your ConfigHub admin
+- Authentication failed? → Check your browser completed login
+- Command not found? → Ensure cub is in your PATH
+
+### Step 3: Choose Your Setup Parameters
+
+**Quick Setup (Recommended for First Time)**
+
+I'll use these defaults:
+- Space name: `actions-demo`
+- Worker name: `bridge-worker-1`
+
+Want to use these? Type **Y** (or continue reading for custom setup)
+
+**Custom Setup**
+
+Choose your own:
+- Space name: _________________ (letters, numbers, hyphens)
+- Worker name: _________________ (letters, numbers, hyphens)
+
+### Step 4: Create Your Space (if needed)
+
+```bash
+# For default setup
+cub space create actions-demo
+
+# For custom (replace YOUR-SPACE-NAME)
+cub space create YOUR-SPACE-NAME
+```
+
+Set it as your working space:
+```bash
+# For default
+cub context set --space actions-demo
+
+# For custom
+cub context set --space YOUR-SPACE-NAME
+```
+
+**Verify**: 
+```bash
+cub context get
+# Should show Space: actions-demo (or your custom name)
+```
+
+### Step 5: Create and Start the Worker
+
+```bash
+# Create worker (default names)
+cub worker create bridge-worker-1
+
+# Get credentials
+eval "$(cub worker get-envs bridge-worker-1)"
+
+# Verify environment is set
+echo $CONFIGHUB_WORKER_ID
+# Should show a UUID
+```
+
+Now start the bridge in a **new terminal**:
+```bash
+cd github-actions-bridge
+./bin/actions-bridge
+```
+
+You should see:
+```
+2025/08/07 10:30:45 Starting GitHub Actions Bridge worker...
+2025/08/07 10:30:45 Worker ID: [your-id]
+2025/08/07 10:30:45 Connected to ConfigHub
+```
+
+**Keep this terminal running!**
+
+### Step 6: Run Your First ConfigHub Workflow
+
+Back in your original terminal:
+
+```bash
+# Create a simple test workflow
+cat > hello-confighub.yml << 'EOF'
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions  
+metadata:
+  name: hello-confighub
+name: Hello from ConfigHub
+on: push
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: |
+          echo "🎉 Hello from ConfigHub!"
+          echo "Running via: ConfigHub + GitHub Actions Bridge"
+          echo "Time: $(date)"
+EOF
+
+# Create the unit
+cub unit create hello hello-confighub.yml
+
+# Run it!
+cub unit apply hello
+```
+
+**Success looks like**:
+```
+Unit "hello" applied successfully
+Status: Completed
+Exit Code: 0
+```
+
+### Step 7: Troubleshooting ConfigHub Issues
+
+**Problem: "Worker not found"**
+- Is the bridge still running in the other terminal?
+- Check: `cub worker list`
+
+**Problem: "Unit creation failed"**
+- Check YAML syntax: `cat hello-confighub.yml`
+- Verify space context: `cub context get`
+
+**Problem: "Apply failed"**
+- Check worker logs in the bridge terminal
+- Verify Docker is running: `docker ps`
+
+---
+
+## Local Testing Quickstart
+
+Don't have a ConfigHub account? No problem! Let's test locally:
+
+### Step 1: Verify Local Tools
+
+```bash
+# Check Docker
+docker --version
+
+# Check act
+act --version
+
+# Build the local CLI
+make build
+ls ./bin/cub-local-actions
+```
+
+### Step 2: Run Your First Local Workflow
+
+```bash
+# Create a test workflow
+cat > hello-local.yml << 'EOF'
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: hello-local
+name: Hello Local
+on: push
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "🚀 Hello from Local Development!"
+      - run: echo "No ConfigHub needed!"
+EOF
+
+# Run it locally
+./bin/cub-local-actions run hello-local.yml
+```
+
+**Success looks like**:
+```
+[Hello Local/greet] 🏁 Job succeeded
+```
+
+---
+
+## Next Steps After Quick Start
+
+### If You Used ConfigHub
+
+Try more examples:
+```bash
+# See which examples work with ConfigHub
+cat EXAMPLES_COMPATIBILITY.md
+
+# Run a more complex example
+cub unit create build examples/build-test-deploy.yml
+cub unit apply build
+```
+
+### If You Used Local Testing
+
+Explore more:
+```bash
+# Run with verbose output
+./bin/cub-local-actions run hello-local.yml -v
+
+# Try other examples
+./bin/cub-local-actions run examples/hello-world.yml
+./bin/cub-local-actions run examples/multi-job.yml
+```
+
+---
+
 ## Your First Workflow
 
-Let's run a simple workflow to make sure everything works!
+Now that you've verified your setup works, let's understand what just happened and dive deeper!
 
 ### Step 1: Create a test workflow
 
@@ -215,6 +472,105 @@ cub unit apply --space production deploy
 - Files are created with restricted permissions (0600)
 - Secrets are cleaned up after execution
 - Add `secrets.env` to `.gitignore`
+
+## Local Development Workflow
+
+Sometimes you want to test workflows quickly without ConfigHub. The `cub-local-actions` CLI lets you run workflows directly on your machine.
+
+### When to Use Local Development
+
+Use `cub-local-actions` when you:
+- Need to test workflows during development
+- Want quick iteration without ConfigHub setup
+- Are debugging workflow issues
+- Don't need centralized configuration
+
+### Getting Started with Local Development
+
+1. **Build the local CLI**:
+```bash
+make build
+# Creates ./bin/cub-local-actions
+```
+
+2. **Run a workflow directly**:
+```bash
+# Basic execution
+./bin/cub-local-actions run examples/hello-world.yml
+
+# With secrets file
+./bin/cub-local-actions run examples/deploy.yml --secrets-file secrets.env
+
+# Validate without running
+./bin/cub-local-actions validate examples/complex-workflow.yml
+```
+
+3. **Use watch mode for development**:
+```bash
+# Re-runs workflow when file changes
+./bin/cub-local-actions run workflow.yml --watch
+```
+
+### Local CLI Commands
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `run` | Execute a workflow | `cub-local-actions run workflow.yml` |
+| `validate` | Check workflow syntax | `cub-local-actions validate workflow.yml` |
+| `clean` | Remove temporary files | `cub-local-actions clean` |
+| `version` | Show version info | `cub-local-actions version` |
+
+### Example: Local Testing Workflow
+
+```bash
+# 1. Create a test workflow
+cat > test-workflow.yml << 'EOF'
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: test
+name: Test Workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Running tests..."
+      - run: npm test
+EOF
+
+# 2. Validate it
+./bin/cub-local-actions validate test-workflow.yml
+
+# 3. Run it
+./bin/cub-local-actions run test-workflow.yml
+
+# 4. Run with environment variables
+./bin/cub-local-actions run test-workflow.yml --env-file .env
+
+# 5. Debug mode
+./bin/cub-local-actions run test-workflow.yml -v
+```
+
+### Local vs ConfigHub Workflows
+
+| Feature | Local (`cub-local-actions`) | ConfigHub (`cub`) |
+|---------|----------------------------|-------------------|
+| Setup | No setup needed | Requires ConfigHub account |
+| Secrets | Local files | Centralized management |
+| Collaboration | Single user | Team access |
+| Versioning | Git only | Configuration history |
+| Environments | Manual | Built-in (dev/staging/prod) |
+| Triggers | Manual only | Automated triggers |
+
+### Tips for Local Development
+
+1. **Use the compatibility guide**: Check [Examples Compatibility](EXAMPLES_COMPATIBILITY.md) to see which examples work locally
+2. **Start simple**: Test with `hello-world.yml` first
+3. **Use verbose mode**: Add `-v` flag for debugging
+4. **Clean regularly**: Run `cub-local-actions clean` to remove temp files
+
+See the [CLI Reference](CLI_REFERENCE.md) for complete `cub-local-actions` documentation.
 
 ## ConfigHub Integration
 
@@ -526,7 +882,7 @@ If you're stuck:
 Now that you understand the basics, explore these resources:
 
 ### 1. Browse the Examples
-Check out our [15+ example workflows](examples/) that demonstrate:
+Check out our [17 example workflows](examples/) that demonstrate:
 - [Basic workflows](examples/hello-world.yml) - Start here
 - [Secret handling](examples/with-secrets.yml) - Secure credential management
 - [CI/CD pipelines](examples/build-test-deploy.yml) - Complete deployment flows

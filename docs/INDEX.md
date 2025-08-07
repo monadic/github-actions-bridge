@@ -8,7 +8,6 @@ This index provides a complete overview of all documentation for the GitHub Acti
 - **[README.md](../README.md)** - Project overview, quick start, and examples
 - **[USER_GUIDE.md](../USER_GUIDE.md)** - Comprehensive user guide and tutorials
 - **[CLI_REFERENCE.md](../CLI_REFERENCE.md)** - Complete CLI command reference
-- **[CONTRIBUTING.md](../CONTRIBUTING.md)** - How to contribute to the project
 
 ### Technical Documentation
 - **[SECURITY.md](../SECURITY.md)** - Security considerations and best practices
@@ -18,7 +17,7 @@ This index provides a complete overview of all documentation for the GitHub Acti
 - **[YAML_FORMATS.md](../YAML_FORMATS.md)** - YAML format specifications and validation
 
 ### Examples and Guides
-- **[examples/README.md](../examples/README.md)** - Detailed guide to all 17+ workflow examples
+- **[examples/README.md](../examples/README.md)** - Detailed guide to all 17 workflow examples
 - **[examples/](../examples/)** - Actual workflow files with comments
 
 ### Configuration Files
@@ -48,9 +47,9 @@ Need Enterprise Features?
     ↓
 ENTERPRISE_FEATURES.md → ConfigHub SaaS
     ↓
-Contributing?
+Want to Report Issues?
     ↓
-CONTRIBUTING.md → SDK_REQUESTS.md
+GitHub Issues → SDK_REQUESTS.md
 ```
 
 ## 📖 Reading Order for New Users
@@ -73,7 +72,7 @@ CONTRIBUTING.md → SDK_REQUESTS.md
 - **Security risks?** → [SECURITY.md](../SECURITY.md)
 - **ConfigHub SDK?** → [SDK_VALIDATION.md](../SDK_VALIDATION.md)
 - **Missing features?** → [ENTERPRISE_FEATURES.md](../ENTERPRISE_FEATURES.md)
-- **Contributing?** → [CONTRIBUTING.md](../CONTRIBUTING.md)
+- **Report issues?** → [GitHub Issues](https://github.com/confighub/actions-bridge/issues)
 
 ### "I found a..."
 - **Bug** → [GitHub Issues](https://github.com/confighub/actions-bridge/issues)
@@ -90,7 +89,6 @@ CONTRIBUTING.md → SDK_REQUESTS.md
 | ENTERPRISE_FEATURES.md | Feature delegation | ✅ Complete | Current |
 | SDK_VALIDATION.md | SDK analysis | ✅ Complete | Current |
 | SDK_REQUESTS.md | SDK improvements | ✅ Complete | Current |
-| CONTRIBUTING.md | Contribution guide | ⚠️ Needs creation | - |
 
 ## 🔗 External Resources
 
