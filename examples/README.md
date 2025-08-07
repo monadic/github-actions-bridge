@@ -33,6 +33,13 @@ If you're new here, start with these examples in order:
 
 Then explore the advanced ConfigHub integration examples for powerful features like time-travel testing and configuration-driven deployments.
 
+### CUB Examples
+
+Here are ConfigHub-based workflows with CUB CLI
+
+1. **[cub-hello-world.yaml]** - A simple workflow to test ConfigHub connection functionality
+2. **[cub-helm-cert-manager.yaml]** - A ConfigHub Helm workflow
+
 ## Examples Overview
 
 ### Basic Examples
