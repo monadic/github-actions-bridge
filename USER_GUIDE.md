@@ -129,7 +129,45 @@ This guide will help you run your first GitHub Actions workflow. We'll start wit
 First, let's make sure you have everything needed:
 
 ```bash
-# Check if cub is installed
+# 1. Check if Docker is running
+docker ps
+```
+
+**What to expect:**
+- ✅ **Success**: You see either an empty table with headers (CONTAINER ID, IMAGE, etc.) or a list of running containers
+- ❌ **Error**: "Cannot connect to the Docker daemon" or similar error message
+
+**Did it work?**
+- ✅ **Yes** → Docker is ready! Continue checking other tools
+- ❌ **No** → Start Docker Desktop:
+  - Mac: Open Docker Desktop from Applications
+  - Linux: `sudo systemctl start docker`
+  - Wait for Docker to fully start (icon shows "Docker Desktop is running")
+
+**Important:** You do NOT need to:
+- Create any containers manually in Docker Desktop
+- Pull any images beforehand
+- Configure anything in Docker Desktop
+
+The bridge handles all Docker operations automatically when you run workflows.
+
+**What `docker ps` verifies:**
+- ✅ Docker daemon is running
+- ✅ Docker CLI can communicate with the daemon
+- ✅ You have permissions to use Docker
+- That's all you need!
+
+```bash
+# 2. Check if act is installed
+act --version
+```
+
+**Did it work?**
+- ✅ **Yes** → Continue to check cub
+- ❌ **No** → Install act (see Prerequisites section above)
+
+```bash
+# 3. Check if cub is installed
 cub version
 ```
 
@@ -252,6 +290,12 @@ You should see:
 **Keep this terminal running!**
 
 ### Step 6: Run Your First ConfigHub Workflow
+
+**Note:** This is when Docker is actually used - the bridge will:
+- Automatically pull the `ubuntu-latest` image (or any other runner image specified)
+- Create temporary containers for each job
+- Clean up containers after execution
+- You'll see this activity in Docker Desktop, but no manual intervention is needed
 
 Back in your original terminal:
 
