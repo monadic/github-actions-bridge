@@ -191,7 +191,7 @@ Check the execution results:
 cub unit get hello
 
 # View execution logs
-cub unit get hello --extended
+cub unit get hello --verbose
 ```
 
 ## Running More Examples
@@ -281,7 +281,7 @@ cub worker list                         # List workers
 # Units (workflows)
 cub unit create <name> <file>           # Create unit
 cub unit apply <name>                   # Run unit
-cub unit get <name> --extended          # View logs
+cub unit get <name> --verbose           # View detailed info
 
 # Start worker
 ./bin/actions-bridge                    # Run in separate terminal

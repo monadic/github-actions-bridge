@@ -349,9 +349,31 @@ Exit Code: 0
 - Check YAML syntax: `cat hello-confighub.yml`
 - Verify space context: `cub context get`
 
-**Problem: "Apply failed"**
-- Check worker logs in the bridge terminal
-- Verify Docker is running: `docker ps`
+**Problem: "Apply failed" or "Apply didn't complete on unit"**
+- First, check if the bridge worker is still running in the other terminal
+- Look for error messages in the bridge terminal output
+- Common causes:
+  - Bridge worker crashed or was stopped
+  - Workflow YAML has syntax errors
+  - Docker image pull failed (check internet connection)
+  - Insufficient disk space for Docker images
+- Debug steps:
+  ```bash
+  # 1. Check if worker is registered
+  cub worker list
+  
+  # 2. Check unit details
+  cub unit get hello --verbose
+  
+  # 3. Verify Docker is working
+  docker run hello-world
+  
+  # 4. Restart the bridge worker if needed
+  # In the bridge terminal, Ctrl+C then start again:
+  eval "$(cub worker get-envs bridge-worker-1)"
+  export CONFIGHUB_URL=https://hub.confighub.com
+  ./bin/actions-bridge
+  ```
 
 ---
 
@@ -479,7 +501,7 @@ Exit code: 0
 
 ```bash
 # See workflow details without running
-cub unit get --space default hello --extended
+cub unit get --space default hello --verbose
 
 # Apply with verbose output
 cub unit apply --space default hello --debug
