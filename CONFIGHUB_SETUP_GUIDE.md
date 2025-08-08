@@ -48,9 +48,12 @@ cub context get
 
 You should see something like:
 ```
-Organization: your-org
-Space: default
-User: you@example.com
+User Email             your-email@example.com
+IDP User ID            user_xxxxxxxxxxxxxxxxxxxx
+IDP Organization ID    org_xxxxxxxxxxxxxxxxxxxxx
+ConfigHub URL          https://hub.confighub.com
+Space                  default (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+Organization           xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 **Troubleshooting:**
@@ -126,6 +129,15 @@ In a **new terminal window**, start the worker:
 ```bash
 # Navigate to the project directory
 cd /path/to/github-actions-bridge
+
+# IMPORTANT: Set the worker environment variables in this new terminal
+# You must run this again in the new terminal:
+eval "$(cub worker get-envs actions-bridge-1)"
+
+# Or manually export them:
+# export CONFIGHUB_WORKER_ID="your-worker-id"
+# export CONFIGHUB_WORKER_SECRET="your-worker-secret"
+# export CONFIGHUB_URL="https://hub.confighub.com"
 
 # Start the worker
 ./bin/actions-bridge

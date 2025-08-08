@@ -22,7 +22,7 @@ git status
 git branch --show-current
 
 # 2. Verify cub CLI is installed and get overview
-cub --version
+cub version
 cub --help-overview
 
 # 3. Check if act is installed
@@ -209,7 +209,7 @@ make docker    # Build Docker image
 
 ## Quick Verification Checklist
 
-- [ ] Can run `cub --version` successfully
+- [ ] Can run `cub version` successfully
 - [ ] Can run `act --version` successfully
 - [ ] Docker is running (`docker ps`)
 - [ ] Understand the project is at `github.com/confighub/actions-bridge`

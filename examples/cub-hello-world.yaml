@@ -35,7 +35,7 @@ jobs:
           chmod +x /tmp/cub
           
           # Verify download
-          /tmp/cub --version || echo "cub downloaded but may need initialization"
+          /tmp/cub version || echo "cub downloaded but may need initialization"
       
       - name: Test cub context
         run: |

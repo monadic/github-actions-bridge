@@ -89,7 +89,7 @@ echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.bashrc  # For Linux/bash
 source ~/.zshrc  # or source ~/.bashrc
 
 # Test it works
-cub --version
+cub version
 
 # Login to ConfigHub
 cub auth login
@@ -130,7 +130,7 @@ First, let's make sure you have everything needed:
 
 ```bash
 # Check if cub is installed
-cub --version
+cub version
 ```
 
 **Did it work?**
@@ -156,9 +156,12 @@ cub context get
 
 You should see something like:
 ```
-Organization: your-org
-Space: default
-User: you@example.com
+User Email             your-email@example.com
+IDP User ID            user_xxxxxxxxxxxxxxxxxxxx
+IDP Organization ID    org_xxxxxxxxxxxxxxxxxxxxx
+ConfigHub URL          https://hub.confighub.com
+Space                  default (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
+Organization           xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 ```
 
 **Troubleshooting**:
@@ -224,6 +227,18 @@ echo $CONFIGHUB_WORKER_ID
 Now start the bridge in a **new terminal**:
 ```bash
 cd github-actions-bridge
+
+# IMPORTANT: Set the worker credentials in this new terminal
+# Option 1: Run the eval command again AND set the URL
+eval "$(cub worker get-envs bridge-worker-1)"
+export CONFIGHUB_URL=https://hub.confighub.com
+
+# Option 2: Or export ALL variables manually
+# export CONFIGHUB_WORKER_ID=your-worker-id
+# export CONFIGHUB_WORKER_SECRET=your-worker-secret
+# export CONFIGHUB_URL=https://hub.confighub.com  # CRITICAL: Must be hub, not api!
+
+# Now start the bridge
 ./bin/actions-bridge
 ```
 
@@ -275,6 +290,12 @@ Exit Code: 0
 ```
 
 ### Step 7: Troubleshooting ConfigHub Issues
+
+**Problem: "dial tcp: lookup api.confighub.com: no such host"**
+- The bridge is using the wrong ConfigHub URL
+- You MUST set: `export CONFIGHUB_URL=https://hub.confighub.com`
+- NOT `api.confighub.com` - this URL doesn't exist!
+- Make sure to set this in the terminal where you run `./bin/actions-bridge`
 
 **Problem: "Worker not found"**
 - Is the bridge still running in the other terminal?

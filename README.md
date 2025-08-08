@@ -127,13 +127,13 @@ echo 'export PATH="$HOME/.confighub/bin:$PATH"' >> ~/.bashrc # For bash
 source ~/.zshrc  # or source ~/.bashrc
 
 # Verify installation
-cub --version
+cub version
 ```
 
 **Troubleshooting PATH Issues:**
 - If `cub: command not found`, the PATH isn't set correctly
 - Check installation location: `ls ~/.confighub/bin/cub`
-- Use full path if needed: `~/.confighub/bin/cub --version`
+- Use full path if needed: `~/.confighub/bin/cub version`
 
 ### Setup
 
