@@ -1,0 +1,15 @@
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions  
+metadata:
+  name: hello-confighub
+name: Hello from ConfigHub
+on: push
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Say Hello
+        run: |
+          echo "🎉 Hello from ConfigHub!"
+          echo "Running via: ConfigHub + GitHub Actions Bridge"
+          echo "Time: $(date)"

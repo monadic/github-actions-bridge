@@ -207,6 +207,13 @@ make docker    # Build Docker image
    - Without target: "cannot invoke action on a unit without a target" error
    - This is not well documented in ConfigHub's main docs
 
+9. **Worker-Target Mapping Critical**
+   - Targets are pre-mapped to specific workers (check with `cub target list`)
+   - You MUST use the worker that the target points to
+   - If target shows `actions-bridge-1`, use that worker's credentials
+   - Creating a new worker won't work unless you also create new targets
+   - This is the #1 cause of "unit apply hangs forever" issues
+
 ## Quick Verification Checklist
 
 - [ ] Can run `cub version` successfully

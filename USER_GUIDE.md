@@ -809,6 +809,26 @@ cub help
 
 ## Troubleshooting
 
+### Unit apply hangs forever
+
+**Problem**: When running `cub unit apply`, the command hangs indefinitely
+**Cause**: Worker-target mismatch - your worker isn't the one mapped to the target
+**Solution**:
+```bash
+# 1. Check which worker the target uses
+cub target list | grep docker-desktop
+# Note the WORKER-SLUG column (e.g., actions-bridge-1)
+
+# 2. Use THAT worker's credentials
+cub worker get-envs <worker-from-target-list>
+eval "$(cub worker get-envs <worker-from-target-list>)"
+
+# 3. Restart the bridge with correct credentials
+pkill actions-bridge
+export CONFIGHUB_URL=https://hub.confighub.com
+./bin/actions-bridge 2>&1 | tee bridge.log &
+```
+
 ### "act not found" or workflow execution fails
 
 **Problem**:
