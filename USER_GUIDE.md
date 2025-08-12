@@ -807,6 +807,103 @@ cub help
 # Or refer to act documentation for execution limitations
 ```
 
+## Advanced Patterns
+
+### GitOps Workflow
+
+ConfigHub enables GitOps patterns for workflow management:
+
+```bash
+# 1. Make changes locally
+edit workflow.yml
+
+# 2. Preview changes
+cub unit plan my-workflow
+
+# 3. Apply to staging
+cub context set --space staging
+cub unit apply my-workflow
+
+# 4. Promote to production
+cub context set --space production
+cub unit apply my-workflow
+```
+
+### Multi-Environment Setup
+
+Manage different configurations per environment:
+
+```yaml
+# base-workflow.yml
+apiVersion: actions.confighub.com/v1alpha1
+kind: Actions
+metadata:
+  name: deploy-app
+  
+# Override per environment in ConfigHub:
+# staging:
+#   environment: staging
+#   replicas: 1
+#   
+# production:
+#   environment: production
+#   replicas: 3
+```
+
+### Dependency Management
+
+Express dependencies between workflows:
+
+```yaml
+# ConfigHub tracks dependencies
+metadata:
+  name: frontend-deploy
+  depends_on:
+    - api-deploy
+    - database-migration
+```
+
+### Composing Applications
+
+ConfigHub can orchestrate multiple workers for complex applications:
+
+```yaml
+# App composed of multiple configurations
+my-app:
+  - database:     # Managed by Terraform worker
+      type: rds
+      size: db.t3.medium
+  
+  - api-service:  # Managed by Kubernetes worker
+      image: myapp/api:v2.0
+      replicas: 3
+  
+  - deployment:   # Managed by Actions bridge
+      workflow: deploy-api.yml
+      triggers: [database, api-service]
+```
+
+### Configuration Best Practices
+
+1. **Separate Concerns**: Different configs for different aspects
+2. **Use Spaces**: Dev/staging/prod in separate spaces
+3. **Version Everything**: ConfigHub tracks all changes
+4. **Link Dependencies**: Express relationships between configs
+
+### Security Considerations
+
+- **Secrets**: Store in ConfigHub, injected at runtime
+- **Access Control**: Space-level permissions
+- **Audit Trail**: All changes tracked
+- **Encryption**: Transit and at-rest
+
+### Testing Configurations
+
+1. **Dry Run**: Use `cub unit plan` to preview changes
+2. **Staging Spaces**: Test configs before production
+3. **Rollback**: ConfigHub maintains history - use `cub unit rollback`
+4. **Validation**: Workers validate before applying
+
 ## Troubleshooting
 
 ### Unit apply hangs forever

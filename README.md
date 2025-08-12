@@ -34,6 +34,20 @@ Managing configurations and workflows separately leads to complexity and drift. 
 - **Local Development**: Test GitHub Actions workflows instantly on your machine
 - **ConfigHub Integration**: Unify workflows with configuration management for production
 
+### How It Works
+
+The GitHub Actions Bridge is a **worker** that:
+1. Receives workflow configurations from ConfigHub
+2. Executes them using GitHub Actions locally via `act`
+3. Reports status back to ConfigHub
+4. Makes workflows manageable as configuration units
+
+```
+Developer → ConfigHub → Bridge Worker → GitHub Actions → Results
+    ↑                                                         ↓
+    └─────────────── Status & Logs ←─────────────────────────┘
+```
+
 ## Key Benefits
 
 ✅ **Local Testing** - Run workflows immediately without pushing to GitHub  

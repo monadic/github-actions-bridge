@@ -259,6 +259,48 @@ Once all checks pass:
 3. Set up production deployment
 4. Read security guidelines
 
+## Essential Commands Reference
+
+### Setup
+```bash
+cub auth login                              # Authenticate to ConfigHub
+cub context get                             # View current context
+cub context set --space my-test-space      # Set working space
+```
+
+### Working with Units (Workflows)
+```bash
+cub unit create name file.yml --target docker-desktop
+cub unit apply name                         # Execute workflow
+cub unit get name                           # Check status
+cub unit list                               # List all units
+cub unit delete name                        # Remove unit
+cub unit history name                       # View execution history
+```
+
+### Worker Management
+```bash
+cub worker create my-worker                 # Create new worker
+cub worker list                             # List all workers  
+cub worker get my-worker                    # Get worker details
+cub worker get-envs my-worker              # Get credentials for export
+cub worker delete my-worker                 # Remove worker
+```
+
+### Target Management
+```bash
+cub target list                             # List available targets
+cub target get docker-desktop               # Get target details
+```
+
+### Key Environment Variables
+```bash
+CONFIGHUB_URL=https://hub.confighub.com    # Hub API endpoint (NOT api.confighub.com)
+CONFIGHUB_WORKER_ID=<from-get-envs>        # Worker authentication
+CONFIGHUB_WORKER_SECRET=<from-get-envs>    # Worker secret
+CONFIGHUB_SPACE=<space-name>               # Default space (optional)
+```
+
 ## Emergency Commands
 
 ```bash

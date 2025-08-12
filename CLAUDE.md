@@ -12,6 +12,26 @@ This document helps Claude Code sessions quickly understand the GitHub Actions B
 
 **Key Insight**: This project turns GitHub Actions workflows into configuration units that can be managed, versioned, and deployed through ConfigHub.
 
+## Core ConfigHub Concepts
+
+### Platform Components
+- **Spaces**: Isolated environments for different projects or teams (dev, staging, prod)
+- **Units**: Individual configuration items (workflows, service configs, secrets)
+- **Workers**: Services that apply configurations to make things happen
+- **Targets**: Where configurations get applied (e.g., docker-desktop, kubernetes)
+
+### Worker Types in ConfigHub Ecosystem
+1. **Infrastructure Workers**: Apply Terraform, Pulumi configs
+2. **Application Workers**: Deploy containers, update services  
+3. **Workflow Workers**: Run CI/CD pipelines (like this bridge)
+4. **Security Workers**: Apply policies, scan configurations
+
+### How Bridges Connect Systems
+Bridges translate between ConfigHub's declarative model and other systems:
+- **This Bridge**: ConfigHub ↔ GitHub Actions
+- **Kubernetes Bridge**: ConfigHub ↔ K8s Resources
+- **Cloud Bridges**: ConfigHub ↔ AWS/GCP/Azure
+
 ## Essential Context Commands
 
 Run these commands first to understand the environment:
