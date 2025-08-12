@@ -216,7 +216,14 @@ jobs:
 ### Getting Started
 - 📖 **[User Guide](USER_GUIDE.md)** - Comprehensive walkthrough for both workflows
 - 🆕 **[ConfigHub Setup Guide](CONFIGHUB_SETUP_GUIDE.md)** - Step-by-step ConfigHub setup with troubleshooting
+- ✅ **[CONFIG.md](CONFIG.md)** - Quick setup verification and troubleshooting checklist
 - 🎯 **[Examples](examples/)** - 17 workflow examples (some simulated)
+
+### Helpful Scripts
+The `scripts/` directory contains utilities to simplify operations:
+- 🚀 `start-bridge.sh` - Start the bridge with automatic health checks
+- 👀 `watch-bridge.sh` - Monitor logs with smart filtering
+- 🔧 `troubleshoot.sh` - Diagnose configuration issues
 - 📊 **[Examples Compatibility](EXAMPLES_COMPATIBILITY.md)** - Which examples work where
 - 🔒 **[Security](SECURITY.md)** - Security considerations and best practices
 
